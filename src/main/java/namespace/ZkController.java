@@ -1,5 +1,7 @@
 package namespace;
 
+import java.util.List;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
@@ -29,6 +31,12 @@ public class ZkController {
 	
 	public void deleteNode(String path) throws KeeperException, InterruptedException {
 		zk.delete(path, zk.exists(path, true).getVersion());
+	}
+	
+	public List<String> getChildren(String path) throws KeeperException, InterruptedException {
+		List<String> znodeList = zk.getChildren(path, true);
+		
+		return znodeList;
 	}
 	
 	public boolean exists(String path) throws KeeperException, InterruptedException {
