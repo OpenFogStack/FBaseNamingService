@@ -9,7 +9,7 @@ package namespace;
  *
  * @param <E> Type of object to be wrapped in the Response object
  */
-abstract class Response<E> {
+class Response<E> {
 	
 	/**
 	 * The object wrapped in the Response class

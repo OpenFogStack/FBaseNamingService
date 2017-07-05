@@ -2,8 +2,6 @@ package namespace;
 
 import java.util.List;
 
-import namespace.NodeResponse.NodeResponseCode;
-
 /**
  * The Node class performs all operations on the Nodes section of
  * the system. This is primarily designed to keep track of information
@@ -12,7 +10,12 @@ import namespace.NodeResponse.NodeResponseCode;
  * 
  * @author Wm. Keith van der Meulen
  */
-class Node {
+class Node extends SystemEntity {
+	
+	/**
+	 * Name of the entity type
+	 */
+	static final String type = "node";
 	
 	/**
 	 * Node ID string
@@ -58,18 +61,6 @@ class Node {
 	}
 	
 	/**
-	 * Responds with a random string unused by any node at the time of the call
-	 * 
-	 * @param controller Controller for interfacing with base distributed system
-	 * @return Response object with String containing an unused node ID
-	 */
-	static NodeResponse<String> getUnusedNodeID(ZkController controller) {
-		// TODO Fill out stub function
-		
-		return new NodeResponse<String>(null, NodeResponseCode.NULL); // XXX Placeholder return... must be changed
-	}
-	
-	/**
 	 * Registers a node with the FBase system
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
@@ -80,10 +71,11 @@ class Node {
 	 * @param description Plain text description of node (e.g. "TU Berlin ISE Raspberry Pi Cluster #4")
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static NodeResponse<Boolean> registerNode(ZkController controller, String nodeID, String publicKey, List<String> machines, String location, String description) {
-		// TODO Fill out stub function
+	static Response<Boolean> registerNode(ZkController controller, String nodeID, String publicKey, List<String> machines, String location, String description) {
+		// Create Node to register
+		Node entity = new Node(nodeID, publicKey, machines, location, description);
 		
-		return new NodeResponse<Boolean>(null, NodeResponseCode.NULL); // XXX Placeholder return... must be changed
+		return registerEntity(controller, nodeID, entity);
 	}
 	
 	/**
@@ -93,10 +85,8 @@ class Node {
 	 * @param nodeID ID of node to get information from
 	 * @return Response object with String containing the Node information
 	 */
-	static NodeResponse<String> getNodeInfo(ZkController controller, String nodeID) {
-		// TODO Fill out stub function
-		
-		return new NodeResponse<String>(null, NodeResponseCode.NULL); // XXX Placeholder return... must be changed
+	static Response<String> getNodeInfo(ZkController controller, String nodeID) {
+		return getEntityInfo(controller, nodeID);
 	}
 	
 	/**
@@ -110,10 +100,11 @@ class Node {
 	 * @param description Plain text description of node (e.g. "TU Berlin ISE Raspberry Pi Cluster #4")
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static NodeResponse<Boolean> updateNodeInfo(ZkController controller, String nodeID, String publicKey, List<String> machines, String location, String description) {
-		// TODO Fill out stub function
+	static Response<Boolean> updateNodeInfo(ZkController controller, String nodeID, String publicKey, List<String> machines, String location, String description) {
+		// Create Node to update
+		Node entity = new Node(nodeID, publicKey, machines, location, description);
 		
-		return new NodeResponse<Boolean>(null, NodeResponseCode.NULL); // XXX Placeholder return... must be changed
+		return updateEntityInfo(controller, nodeID, entity);
 	}
 	
 	/**
@@ -124,9 +115,7 @@ class Node {
 	 * @param nodeID Node to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static NodeResponse<Boolean> removeNode(ZkController controller, String nodeID) {
-		// TODO Fill out stub function
-		
-		return new NodeResponse<Boolean>(null, NodeResponseCode.NULL); // XXX Placeholder return... must be changed
+	static Response<Boolean> removeNode(ZkController controller, String nodeID) {
+		return removeEntity(controller, nodeID);
 	}
 }

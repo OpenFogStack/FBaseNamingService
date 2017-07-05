@@ -1,7 +1,5 @@
 package namespace;
 
-import namespace.ClientResponse.ClientResponseCode;
-
 /**
  * The Client class performs all operations on the Clients section of
  * the system. This is primarily designed to keep track of information
@@ -10,7 +8,12 @@ import namespace.ClientResponse.ClientResponseCode;
  * 
  * @author Wm. Keith van der Meulen
  */
-class Client {
+class Client extends SystemEntity {
+	
+	/**
+	 * Name of the entity type
+	 */
+	static final String type = "client";
 	
 	/**
 	 * Client ID string
@@ -35,18 +38,6 @@ class Client {
 	}
 	
 	/**
-	 * Responds with a random string unused by any client at the time of the call
-	 * 
-	 * @param controller Controller for interfacing with base distributed system
-	 * @return Response object with String containing an unused client ID
-	 */
-	static ClientResponse<String> getUnusedClientID(ZkController controller) {
-		// TODO Fill out stub function
-		
-		return new ClientResponse<String>(null, ClientResponseCode.NULL); // XXX Placeholder return... must be changed
-	}
-	
-	/**
 	 * Registers a client with the FBase system
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
@@ -54,10 +45,11 @@ class Client {
 	 * @param publicKey Public encryption key of the client
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static ClientResponse<Boolean> registerClient(ZkController controller, String clientID, String publicKey) {
-		// TODO Fill out stub function
-		
-		return new ClientResponse<Boolean>(null, ClientResponseCode.NULL); // XXX Placeholder return... must be changed
+	static Response<Boolean> registerClient(ZkController controller, String clientID, String publicKey) {
+		// Create Client to register
+		Client entity = new Client(clientID, publicKey);
+				
+		return registerEntity(controller, clientID, entity);
 	}
 	
 	/**
@@ -67,10 +59,8 @@ class Client {
 	 * @param clientID ID of client to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	static ClientResponse<String> getClientInfo(ZkController controller, String clientID) {
-		// TODO Fill out stub function
-		
-		return new ClientResponse<String>(null, ClientResponseCode.NULL); // XXX Placeholder return... must be changed
+	static Response<String> getClientInfo(ZkController controller, String clientID) {
+		return getEntityInfo(controller, clientID);
 	}
 	
 	/**
@@ -81,10 +71,11 @@ class Client {
 	 * @param publicKey Public encryption key of the client
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static ClientResponse<Boolean> updateClientInfo(ZkController controller, String clientID, String publicKey) {
-		// TODO Fill out stub function
+	static Response<Boolean> updateClientInfo(ZkController controller, String clientID, String publicKey) {
+		// Create Client to update
+		Client entity = new Client(clientID, publicKey);
 		
-		return new ClientResponse<Boolean>(null, ClientResponseCode.NULL); // XXX Placeholder return... must be changed
+		return updateEntityInfo(controller, clientID, entity);
 	}
 	
 	/**
@@ -95,9 +86,7 @@ class Client {
 	 * @param clientID Client to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static ClientResponse<Boolean> removeClient(ZkController controller, String clientID) {
-		// TODO Fill out stub function
-		
-		return new ClientResponse<Boolean>(null, ClientResponseCode.NULL); // XXX Placeholder return... must be changed
+	static Response<Boolean> removeClient(ZkController controller, String clientID) {
+		return removeEntity(controller, clientID);
 	}
 }
