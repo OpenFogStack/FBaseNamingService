@@ -2,8 +2,8 @@ package namespace;
 
 import org.apache.zookeeper.KeeperException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import ZkSystem.ZkController;
+import model.Entity;
 
 /**
  * The SystemEntity class is the parent class for subsystems within the ZooKeeper
@@ -16,17 +16,17 @@ abstract class SystemEntity {
 	/**
 	 * Name of the entity type
 	 */
-	static String type;
+	protected static String type;
 	
 	/**
 	 * System prefix for location of all active SystemEntities
 	 */
-	static String pathPrefixActive = "/" + type + "/active/";
+	protected static String pathPrefixActive = "/" + type + "/active/";
 	
 	/**
 	 * System prefix for location of all tombstoned SystemEntities
 	 */
-	static String pathPrefixTombstoned = "/" + type + "/tombstoned/";
+	protected static String pathPrefixTombstoned = "/" + type + "/tombstoned/";
 	
 	/**
 	 * Length of random strings generated in getUnusedNodeID()
@@ -92,13 +92,11 @@ abstract class SystemEntity {
 	 * @param entity The entity to add
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> registerEntity(ZkController controller, String entityID, SystemEntity entity) {
+	protected static Response<Boolean> registerEntity(ZkController controller, String entityID, Entity entity) {
 		// Parse entity to JSON and into byte[]
-		byte[] data;
-		try {
-			data = toJson(entity);
-		} catch (JsonProcessingException e) {
-			e.printStackTrace();
+		byte[] data = entity.toJSON().getBytes();
+		
+		if (data == null) {
 			return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
 		}
 		
@@ -127,7 +125,7 @@ abstract class SystemEntity {
 	 * @param entityID ID of entity to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	static Response<String> getEntityInfo(ZkController controller, String entityID) {
+	protected static Response<String> getEntityInfo(ZkController controller, String entityID) {
 		try {
 			String data = null;
 			if(isActive(controller, entityID)) {
@@ -156,15 +154,13 @@ abstract class SystemEntity {
 	 * @param entity The new entity information to be stored
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> updateEntityInfo(ZkController controller, String entityID, SystemEntity entity) {
+	protected static Response<Boolean> updateEntityInfo(ZkController controller, String entityID, Entity entity) {
 		try {
 			if(isActive(controller, entityID)) {
 				// Parse entity to JSON and into byte[]
-				byte[] data;
-				try {
-					data = toJson(entity);
-				} catch (JsonProcessingException e) {
-					e.printStackTrace();
+				byte[] data = entity.toJSON().getBytes();
+				
+				if(data == null) {
 					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
 				}
 				
@@ -193,7 +189,7 @@ abstract class SystemEntity {
 	 * @param entityID Entity to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeEntity(ZkController controller, String entityID) {
+	protected static Response<Boolean> removeEntity(ZkController controller, String entityID) {
 		try {
 			if (controller.exists(activePath(entityID))) {
 				// Get data from client
@@ -221,23 +217,12 @@ abstract class SystemEntity {
 	}
 	
 	/**
-	 * Converts SystemEntities object into JSON representation
-	 * 
-	 * @param entity Entity to convert to JSON
-	 * @return Byte array containing entity in JSON format
-	 * @throws JsonProcessingException
-	 */
-	static byte[] toJson(SystemEntity entity) throws JsonProcessingException {
-		return new ObjectMapper().writeValueAsBytes(entity);
-	}
-	
-	/**
 	 * Creates proper system path for an active SystemEntity
 	 * 
 	 * @param suffix The variable part of the system path
 	 * @return Proper system path to SystemEntity
 	 */
-	static String activePath(String suffix) {
+	protected static String activePath(String suffix) {
 		return pathPrefixActive + suffix;
 	}
 	
@@ -247,7 +232,7 @@ abstract class SystemEntity {
 	 * @param suffix The variable part of the system path
 	 * @return Proper system path to SystemEntity
 	 */
-	static String tombstonedPath(String suffix) {
+	protected static String tombstonedPath(String suffix) {
 		return pathPrefixTombstoned + suffix;
 	}
 	
@@ -260,7 +245,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	static boolean exists(ZkController controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean exists(ZkController controller, String suffix) throws KeeperException, InterruptedException {
 		return isActive(controller, suffix) || isTombstoned(controller, suffix);
 	}
 	
@@ -273,7 +258,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	static boolean isActive(ZkController controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean isActive(ZkController controller, String suffix) throws KeeperException, InterruptedException {
 		return controller.exists(pathPrefixActive + suffix);
 	}
 	
@@ -286,7 +271,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	static boolean isTombstoned(ZkController controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean isTombstoned(ZkController controller, String suffix) throws KeeperException, InterruptedException {
 		return controller.exists(pathPrefixTombstoned + suffix);
 	}
 }

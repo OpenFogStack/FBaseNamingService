@@ -1,5 +1,8 @@
 package namespace;
 
+import ZkSystem.ZkController;
+import model.config.ClientConfig;
+
 /**
  * The Client class performs all operations on the Clients section of
  * the system. This is primarily designed to keep track of information
@@ -16,40 +19,14 @@ class Client extends SystemEntity {
 	static final String type = "client";
 	
 	/**
-	 * Client ID string
-	 */
-	String clientID;
-	
-	/**
-	 * Public encryption key of the client
-	 */
-	String publicKey;
-	
-	/**
-	 * Constructor for Client containing all client fields used
-	 * within FBase.
-	 * 
-	 * @param clientID Client ID string
-	 * @param publicKey Public encryption key of the client
-	 */
-	Client(String clientID, String publicKey) {
-		this.clientID = clientID;
-		this.publicKey = publicKey;
-	}
-	
-	/**
 	 * Registers a client with the FBase system
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param clientID Requested ID of new client
-	 * @param publicKey Public encryption key of the client
+	 * @param entity The ClientConfig to be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> registerClient(ZkController controller, String clientID, String publicKey) {
-		// Create Client to register
-		Client entity = new Client(clientID, publicKey);
-				
-		return registerEntity(controller, clientID, entity);
+	static Response<Boolean> registerClient(ZkController controller, ClientConfig entity) {
+		return registerEntity(controller, entity.getClientID(), entity);
 	}
 	
 	/**
@@ -67,15 +44,11 @@ class Client extends SystemEntity {
 	 * Updates information kept on the client with the matching client ID
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param clientID ID of client to update
-	 * @param publicKey Public encryption key of the client
+	 * @param entity The new ClientConfig object to store
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> updateClientInfo(ZkController controller, String clientID, String publicKey) {
-		// Create Client to update
-		Client entity = new Client(clientID, publicKey);
-		
-		return updateEntityInfo(controller, clientID, entity);
+	static Response<Boolean> updateClientInfo(ZkController controller, ClientConfig entity) {
+		return updateEntityInfo(controller, entity.getClientID(), entity);
 	}
 	
 	/**
