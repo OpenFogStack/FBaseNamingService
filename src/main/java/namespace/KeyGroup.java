@@ -53,9 +53,9 @@ abstract class KeyGroup extends SystemEntity {
 					controller.addNode(activePath(entity.getKeygroupID().getAppPath()), "".getBytes());
 				}
 				
-				// Build Originator Node if necessary
-				if(!isActive(controller, entity.getKeygroupID().getOriginatorPath())) {
-					controller.addNode(activePath(entity.getKeygroupID().getOriginatorPath()), "".getBytes());
+				// Build Tenant Node if necessary
+				if(!isActive(controller, entity.getKeygroupID().getTenantPath())) {
+					controller.addNode(activePath(entity.getKeygroupID().getTenantPath()), "".getBytes());
 				}
 				
 				// Build KeyGroup Node
@@ -363,8 +363,8 @@ abstract class KeyGroup extends SystemEntity {
 		controller.deleteNode(tombstonedPath(keygroupID.toString()));
 		
 		// Remove higher level nodes if necessary
-		if(controller.getChildren(tombstonedPath(keygroupID.getOriginatorPath())).isEmpty()) {
-			controller.deleteNode(tombstonedPath(keygroupID.getOriginatorPath()));
+		if(controller.getChildren(tombstonedPath(keygroupID.getTenantPath())).isEmpty()) {
+			controller.deleteNode(tombstonedPath(keygroupID.getTenantPath()));
 			
 			if(controller.getChildren(tombstonedPath(keygroupID.getAppPath())).isEmpty()) {
 				controller.deleteNode(tombstonedPath(keygroupID.getAppPath()));
