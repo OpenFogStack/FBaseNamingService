@@ -9,13 +9,13 @@ package namespace;
 public enum ResponseCode {
 	
 	SUCCESS("The operation was successful."),
-	ERRROR_ILLEGAL_COMMAND("This command is not allowed"),
+	ERROR_ILLEGAL_COMMAND("This command is not allowed"),
 	ERROR_INTERNAL("An internal problem with the service occured."),
 	ERROR_INVALID_CONTENT("Unable to parse content to KeyGroup."),
-	ERROR_ALREADY_EXISTS("KeyGroup already exists."),
-	ERROR_DOESNT_EXIST("KeyGroup doesn't exist."),
-	ERROR_IS_ACTIVE("KeyGroup is active."),
-	ERROR_TOMBSTONED("KeyGroup is tombstoned."),
+	ERROR_ALREADY_EXISTS("Entity already exists."),
+	ERROR_DOESNT_EXIST("Entity doesn't exist."),
+	ERROR_IS_ACTIVE("Entity is active."),
+	ERROR_TOMBSTONED("Entity is tombstoned."),
 	ERROR_OTHER("An unidentified error occured."),
 	NULL("Invalid return.");
 	

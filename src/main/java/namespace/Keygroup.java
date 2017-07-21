@@ -290,7 +290,7 @@ abstract class KeyGroup extends SystemEntity {
 		if(keygroup.containsReplicaNode(nodeID)) {
 			// Check Node is not the last replica node
 			if(keygroup.getReplicaNodes().size() == 1) {
-				return new Response<Boolean>(false, ResponseCode.ERRROR_ILLEGAL_COMMAND);
+				return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 			}
 			
 			keygroup.removeReplicaNode(nodeID);
@@ -331,7 +331,7 @@ abstract class KeyGroup extends SystemEntity {
 				if(keygroup.getTriggerNodes().size() == 0) {
 					return destroyKeyGroup(controller, keygroupID);
 				} else {
-					return new Response<Boolean>(false, ResponseCode.ERRROR_ILLEGAL_COMMAND);
+					return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 				}
 			}
 			
