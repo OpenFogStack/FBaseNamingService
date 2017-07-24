@@ -6,21 +6,23 @@ import org.apache.zookeeper.KeeperException;
 
 import ZkSystem.ZkController;
 import crypto.CryptoProvider.EncryptionAlgorithm;
+import model.JSONable;
 import model.config.KeygroupConfig;
 import model.config.KeygroupMember;
 import model.config.ReplicaNodeConfig;
 import model.config.TriggerNodeConfig;
 import model.data.KeygroupID;
+import model.data.NodeID;
 
 /**
- * The KeyGroup class performs all operations on the KeyGroups section of
+ * The Keygroup class performs all operations on the Keygroups section of
  * the system. This is primarily designed to keep track of information
  * about how nodes are logically structured together in the system
  * to form a fog network.
  * 
  * @author Wm. Keith van der Meulen
  */
-abstract class KeyGroup extends SystemEntity {
+abstract class Keygroup extends SystemEntity {
 	
 	/**
 	 * Name of the entity type
@@ -28,13 +30,13 @@ abstract class KeyGroup extends SystemEntity {
 	static final String type = "keygroup";
 	
 	/**
-	 * Creates KeyGroup within the FBase system
+	 * Creates Keygroup within the FBase system
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
 	 * @param entity KeygroupConfig object to add to system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> createKeyGroup(ZkController controller, KeygroupConfig entity) {
+	static Response<Boolean> createKeygroup(ZkController controller, KeygroupConfig entity) {
 		try {
 			if(isActive(controller, entity.getKeygroupID().toString())) {
 				return new Response<Boolean>(false, ResponseCode.ERROR_IS_ACTIVE);
@@ -42,7 +44,7 @@ abstract class KeyGroup extends SystemEntity {
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
 				// Parse key group to JSON and into byte[]
-				byte[] data = entity.toJSON().getBytes();
+				byte[] data = JSONable.toJSON(entity).getBytes();
 				
 				if(data == null) {
 					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
@@ -58,7 +60,7 @@ abstract class KeyGroup extends SystemEntity {
 					controller.addNode(activePath(entity.getKeygroupID().getTenantPath()), "".getBytes());
 				}
 				
-				// Build KeyGroup Node
+				// Build Keygroup Node
 				controller.addNode(activePath(entity.getKeygroupID().toString()), data);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} 
@@ -72,48 +74,48 @@ abstract class KeyGroup extends SystemEntity {
 	}
 	
 	/**
-	 * Adds a replica node to an existing KeyGroup
+	 * Adds a replica node to an existing Keygroup
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param rnode The ReplicaNodeConfig to be added to the KeyGroup
+	 * @param rnode The ReplicaNodeConfig to be added to the Keygroup
 	 * @param keygroupID The ID for the config to add the replica node to
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> addReplicaNodeToKeyGroup(ZkController controller, ReplicaNodeConfig rnode, KeygroupID keygroupID) {
-		return addNodeToKeyGroup(controller, rnode, keygroupID, (keygroupConfig, node)->keygroupConfig.addReplicaNode((ReplicaNodeConfig) node));
+	static Response<Boolean> addReplicaNodeToKeygroup(ZkController controller, ReplicaNodeConfig rnode, KeygroupID keygroupID) {
+		return addNodeToKeygroup(controller, rnode, keygroupID, (keygroupConfig, node)->keygroupConfig.addReplicaNode((ReplicaNodeConfig) node));
 	}
 	
 	/**
-	 * Adds a trigger node to an existing KeyGroup
+	 * Adds a trigger node to an existing Keygroup
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param tNode The TriggerNodeConfig to be added to the KeyGroup
+	 * @param tNode The TriggerNodeConfig to be added to the Keygroup
 	 * @param keygroupID The ID for the config to add the replica node to
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> addTriggerNodeToKeyGroup(ZkController controller, TriggerNodeConfig tNode, KeygroupID keygroupID) {
-		return addNodeToKeyGroup(controller, tNode, keygroupID, (keygroupConfig, node)->keygroupConfig.addTriggerNode((TriggerNodeConfig) node));
+	static Response<Boolean> addTriggerNodeToKeygroup(ZkController controller, TriggerNodeConfig tNode, KeygroupID keygroupID) {
+		return addNodeToKeygroup(controller, tNode, keygroupID, (keygroupConfig, node)->keygroupConfig.addTriggerNode((TriggerNodeConfig) node));
 	}
 	
 	/**
-	 * Adds a node to an existing KeyGroup
+	 * Adds a node to an existing Keygroup
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param node The node to be added to the KeyGroup
+	 * @param node The node to be added to the Keygroup
 	 * @param keygroupID The ID for the config to add the replica node to
 	 * @param addToList Expression to add node to proper list
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	private static Response<Boolean> addNodeToKeyGroup(ZkController controller, KeygroupMember node, KeygroupID keygroupID, BiConsumer<KeygroupConfig, KeygroupMember> addToList ) {
+	private static Response<Boolean> addNodeToKeygroup(ZkController controller, KeygroupMember node, KeygroupID keygroupID, BiConsumer<KeygroupConfig, KeygroupMember> addToList ) {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
 				// Get current data from key group
 				byte[] data = controller.readNode(keygroupID.toString());
 				
 				// Parse to object, add nodeID to list, parse back to byte[]
-				KeygroupConfig keygroup = KeygroupConfig.fromJSON(data.toString(), KeygroupConfig.class);
+				KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 				addToList.accept(keygroup, node);
-				data = keygroup.toJSON().getBytes();
+				data = JSONable.toJSON(keygroup).getBytes();
 				
 				// Update key group
 				controller.updateNode(activePath(keygroupID.toString()), data);
@@ -133,19 +135,19 @@ abstract class KeyGroup extends SystemEntity {
 	}
 	
 	/**
-	 * Removes a node from an existing KeyGroup
+	 * Removes a node from an existing Keygroup
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param nodeID The node ID to be deleted from the KeyGroup
-	 * @param keygroupID The ID to the KeyGroup to delete the node from
+	 * @param nodeID The node ID to be deleted from the Keygroup
+	 * @param keygroupID The ID to the Keygroup to delete the node from
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeNodeFromKeyGroup(ZkController controller, String nodeID, KeygroupID keygroupID) {
+	static Response<Boolean> removeNodeFromKeygroup(ZkController controller, NodeID nodeID, KeygroupID keygroupID) {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
-				return removeNodeFromActiveKeyGroup(controller, nodeID, keygroupID);
+				return removeNodeFromActiveKeygroup(controller, nodeID, keygroupID);
 			} else if (isTombstoned(controller, keygroupID.toString())) {
-				return removeNodeFromTombstonedKeyGroup(controller, nodeID, keygroupID);
+				return removeNodeFromTombstonedKeygroup(controller, nodeID, keygroupID);
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
@@ -159,14 +161,14 @@ abstract class KeyGroup extends SystemEntity {
 	}
 	
 	/**
-	 * Responds with all information about the KeyGroup. This includes the
-	 * encryption key and algorithm, so can only be called by nodes in the KeyGroup.
+	 * Responds with all information about the Keygroup. This includes the
+	 * encryption key and algorithm, so can only be called by nodes in the Keygroup.
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param keygroupID The ID to the KeyGroup to get information from
-	 * @return Response object with String containing the KeyGroup information
+	 * @param keygroupID The ID to the Keygroup to get information from
+	 * @return Response object with String containing the Keygroup information
 	 */
-	static Response<String> getKeyGroupInfoAuthorized(ZkController controller, KeygroupID keygroupID) {
+	static Response<String> getKeygroupInfoAuthorized(ZkController controller, KeygroupID keygroupID) {
 		try {
 			String data = null;
 			if(isActive(controller, keygroupID.toString())) {
@@ -188,14 +190,14 @@ abstract class KeyGroup extends SystemEntity {
 	}
 	
 	/**
-	 * Responds with all information about the KeyGroup. This does not includes the
+	 * Responds with all information about the Keygroup. This does not includes the
 	 * encryption key and algorithm, so can be used by any node in the system.
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param keygroupID The ID to the KeyGroup to get information from
-	 * @return Response object with String containing the KeyGroup information
+	 * @param keygroupID The ID to the Keygroup to get information from
+	 * @return Response object with String containing the Keygroup information
 	 */
-	static Response<String> getKeyGroupInfoUnauthorized(ZkController controller, KeygroupID keygroupID) {
+	static Response<String> getKeygroupInfoUnauthorized(ZkController controller, KeygroupID keygroupID) {
 		try {
 			byte[] data = null;
 			if(isActive(controller, keygroupID.toString())) {
@@ -207,10 +209,10 @@ abstract class KeyGroup extends SystemEntity {
 			}
 			
 			// Remove encryption algorithm and secret
-			KeygroupConfig keygroup = KeygroupConfig.fromJSON(data.toString(), KeygroupConfig.class);
+			KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 			keygroup.setEncryptionAlgorithm(null);
 			keygroup.setEncryptionSecret(null);
-			data = keygroup.toJSON().getBytes();
+			data = JSONable.toJSON(keygroup).getBytes();
 			
 			return new Response<String>(data.toString(), ResponseCode.SUCCESS);
 		} catch (KeeperException e) {
@@ -224,23 +226,23 @@ abstract class KeyGroup extends SystemEntity {
 	
 	/**
 	 * Updates the encryption key and algorithm to be used for communication
-	 * within the KeyGroup.
+	 * within the Keygroup.
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param keygroupID The ID to the KeyGroup to get update encryption information
-	 * @param encryptionSecret Encryption key for communication within the KeyGroup
-	 * @param encryptionAlgorithm Encryption algorithm (symmetric) used for communication within the KeyGroup
+	 * @param keygroupID The ID to the Keygroup to get update encryption information
+	 * @param encryptionSecret Encryption key for communication within the Keygroup
+	 * @param encryptionAlgorithm Encryption algorithm (symmetric) used for communication within the Keygroup
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> updateKeyGroupCrypto(ZkController controller, KeygroupID keygroupID, String encryptionSecret, EncryptionAlgorithm encryptionAlgorithm) {
+	static Response<Boolean> updateKeygroupCrypto(ZkController controller, KeygroupID keygroupID, String encryptionSecret, EncryptionAlgorithm encryptionAlgorithm) {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
 				byte[] data = controller.readNode(activePath(keygroupID.toString()));
 				
-				KeygroupConfig keygroup = KeygroupConfig.fromJSON(data.toString(), KeygroupConfig.class);
+				KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 				keygroup.setEncryptionSecret(encryptionSecret);
 				keygroup.setEncryptionAlgorithm(encryptionAlgorithm);
-				data = keygroup.toJSON().getBytes();
+				data = JSONable.toJSON(keygroup).getBytes();
 				
 				controller.updateNode(activePath(keygroupID.toString()), data);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
@@ -259,32 +261,32 @@ abstract class KeyGroup extends SystemEntity {
 	}
 	
 	/**
-	 * Irreversibly tombstones KeyGroup for eventual deletion upon all nodes in the KeyGroup
+	 * Irreversibly tombstones Keygroup for eventual deletion upon all nodes in the Keygroup
 	 * successfully removing themselves.
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param keygroupID The ID to the KeyGroup to remove
+	 * @param keygroupID The ID to the Keygroup to remove
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeKeyGroup(ZkController controller, KeygroupID keygroupID) {
-		return removeEntity(controller, keygroupID.toString());
+	static Response<Boolean> removeKeygroup(ZkController controller, KeygroupID keygroupID) {
+		return removeEntity(controller, keygroupID);
 	}
 	
 	/**
-	 * Removes a node from an active KeyGroup
+	 * Removes a node from an active Keygroup
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param nodeID The node ID to be deleted from the KeyGroup
-	 * @param keygroupID The ID to the KeyGroup to delete the node from
+	 * @param nodeID The node ID to be deleted from the Keygroup
+	 * @param keygroupID The ID to the Keygroup to delete the node from
 	 * @return Response object with Boolean containing the success or failure of operation
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	private static Response<Boolean> removeNodeFromActiveKeyGroup(ZkController controller, String nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
+	private static Response<Boolean> removeNodeFromActiveKeygroup(ZkController controller, NodeID nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
 		byte[] data = controller.readNode(activePath(keygroupID.toString()));
 		
 		// Parse to object
-		KeygroupConfig keygroup = KeygroupConfig.fromJSON(data.toString(), KeygroupConfig.class);
+		KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 		
 		// Find correct list
 		if(keygroup.containsReplicaNode(nodeID)) {
@@ -300,7 +302,7 @@ abstract class KeyGroup extends SystemEntity {
 			return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 		}
 		
-		data = keygroup.toJSON().getBytes();
+		data = JSONable.toJSON(keygroup).getBytes();
 		
 		// Update the ZkNode
 		controller.updateNode(activePath(keygroupID.toString()), data);
@@ -308,20 +310,20 @@ abstract class KeyGroup extends SystemEntity {
 	}
 	
 	/**
-	 * Removes a node from an tombstoned KeyGroup
+	 * Removes a node from an tombstoned Keygroup
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param nodeID The node ID to be deleted from the KeyGroup
-	 * @param keygroupID The ID to the KeyGroup to delete the node from
+	 * @param nodeID The node ID to be deleted from the Keygroup
+	 * @param keygroupID The ID to the Keygroup to delete the node from
 	 * @return Response object with Boolean containing the success or failure of operation
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	private static Response<Boolean> removeNodeFromTombstonedKeyGroup(ZkController controller, String nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
+	private static Response<Boolean> removeNodeFromTombstonedKeygroup(ZkController controller, NodeID nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
 		byte[] data = controller.readNode(tombstonedPath(keygroupID.toString()));
 		
 		// Parse to object
-		KeygroupConfig keygroup = KeygroupConfig.fromJSON(data.toString(), KeygroupConfig.class);
+		KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 		
 		// Find correct list
 		if(keygroup.containsReplicaNode(nodeID)) {
@@ -329,7 +331,7 @@ abstract class KeyGroup extends SystemEntity {
 			if(keygroup.getReplicaNodes().size() == 1) {
 				// If no remaining trigger nodes, destroy group, otherwise, send error until trigger node list is empty
 				if(keygroup.getTriggerNodes().size() == 0) {
-					return destroyKeyGroup(controller, keygroupID);
+					return destroyKeygroup(controller, keygroupID);
 				} else {
 					return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 				}
@@ -342,7 +344,7 @@ abstract class KeyGroup extends SystemEntity {
 			return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 		}
 		
-		data = keygroup.toJSON().getBytes();
+		data = JSONable.toJSON(keygroup).getBytes();
 		
 		// Update the ZkNode
 		controller.updateNode(tombstonedPath(keygroupID.toString()), data);
@@ -350,16 +352,16 @@ abstract class KeyGroup extends SystemEntity {
 	}
 	
 	/**
-	 * Permanently removes KeyGroup and all empty parents from system
+	 * Permanently removes Keygroup and all empty parents from system
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param keygroupID The ID to the KeyGroup to delete the node from
+	 * @param keygroupID The ID to the Keygroup to delete the node from
 	 * @return Response object with Boolean containing the success or failure of operation
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	private static Response<Boolean> destroyKeyGroup(ZkController controller, KeygroupID keygroupID) throws KeeperException, InterruptedException {
-		// Remove KeyGroup ZkNode
+	private static Response<Boolean> destroyKeygroup(ZkController controller, KeygroupID keygroupID) throws KeeperException, InterruptedException {
+		// Remove Keygroup ZkNode
 		controller.deleteNode(tombstonedPath(keygroupID.toString()));
 		
 		// Remove higher level nodes if necessary

@@ -3,7 +3,9 @@ package namespace;
 import org.apache.zookeeper.KeeperException;
 
 import ZkSystem.ZkController;
-import model.Entity;
+import model.JSONable;
+import model.config.Config;
+import model.data.ConfigID;
 
 /**
  * The SystemEntity class is the parent class for subsystems within the ZooKeeper
@@ -92,9 +94,9 @@ abstract class SystemEntity {
 	 * @param entity The entity to add
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> registerEntity(ZkController controller, String entityID, Entity entity) {
+	protected static Response<Boolean> registerEntity(ZkController controller, ConfigID entityID, Config entity) {
 		// Parse entity to JSON and into byte[]
-		byte[] data = entity.toJSON().getBytes();
+		byte[] data = JSONable.toJSON(entity).getBytes();
 		
 		if (data == null) {
 			return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
@@ -103,11 +105,11 @@ abstract class SystemEntity {
 		// Add ZkNode to system
 		try {
 			// Check if ZkNode already exists
-			if(exists(controller, entityID)) {
+			if(exists(controller, entityID.toString())) {
 				return new Response<Boolean>(false, ResponseCode.ERROR_ALREADY_EXISTS);
 			}
 			
-			controller.addNode(activePath(entityID), data);
+			controller.addNode(activePath(entityID.toString()), data);
 			return new Response<Boolean>(true, ResponseCode.SUCCESS);
 		} catch (KeeperException e) {
 			e.printStackTrace();
@@ -125,13 +127,13 @@ abstract class SystemEntity {
 	 * @param entityID ID of entity to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	protected static Response<String> getEntityInfo(ZkController controller, String entityID) {
+	protected static Response<String> getEntityInfo(ZkController controller, ConfigID entityID) {
 		try {
 			String data = null;
-			if(isActive(controller, entityID)) {
-				data = controller.readNode(activePath(entityID)).toString();
-			} else if (isTombstoned(controller, entityID)) {
-				data = controller.readNode(tombstonedPath(entityID)).toString();
+			if(isActive(controller, entityID.toString())) {
+				data = controller.readNode(activePath(entityID.toString())).toString();
+			} else if (isTombstoned(controller, entityID.toString())) {
+				data = controller.readNode(tombstonedPath(entityID.toString())).toString();
 			} else {
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
@@ -154,20 +156,20 @@ abstract class SystemEntity {
 	 * @param entity The new entity information to be stored
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> updateEntityInfo(ZkController controller, String entityID, Entity entity) {
+	protected static Response<Boolean> updateEntityInfo(ZkController controller, ConfigID entityID, Config entity) {
 		try {
-			if(isActive(controller, entityID)) {
+			if(isActive(controller, entityID.toString())) {
 				// Parse entity to JSON and into byte[]
-				byte[] data = entity.toJSON().getBytes();
+				byte[] data = JSONable.toJSON(entity).getBytes();
 				
 				if(data == null) {
 					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
 				}
 				
 				// Add client to system
-				controller.updateNode(activePath(entityID), data);
+				controller.updateNode(activePath(entityID.toString()), data);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
-			} else if (isTombstoned(controller, entityID)) {
+			} else if (isTombstoned(controller, entityID.toString())) {
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
@@ -186,23 +188,23 @@ abstract class SystemEntity {
 	 * enter the system again must register as a new entity with a new ID
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param entityID Entity to tombstone
+	 * @param entityID Config to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> removeEntity(ZkController controller, String entityID) {
+	protected static Response<Boolean> removeEntity(ZkController controller, ConfigID entityID) {
 		try {
-			if (controller.exists(activePath(entityID))) {
+			if (controller.exists(activePath(entityID.toString()))) {
 				// Get data from client
-				byte[] data = controller.readNode(activePath(entityID));
+				byte[] data = controller.readNode(activePath(entityID.toString()));
 				
 				// Copy client to tombstoned path
-				controller.addNode(tombstonedPath(entityID), data);
+				controller.addNode(tombstonedPath(entityID.toString()), data);
 				
 				// Delete client from active path
-				controller.deleteNode(activePath(entityID));
+				controller.deleteNode(activePath(entityID.toString()));
 				
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
-			} else if (controller.exists(tombstonedPath(entityID))) {
+			} else if (controller.exists(tombstonedPath(entityID.toString()))) {
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);

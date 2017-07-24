@@ -2,6 +2,7 @@ package namespace;
 
 import ZkSystem.ZkController;
 import model.config.ClientConfig;
+import model.data.ClientID;
 
 /**
  * The Client class performs all operations on the Clients section of
@@ -36,7 +37,7 @@ class Client extends SystemEntity {
 	 * @param clientID ID of client to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	static Response<String> getClientInfo(ZkController controller, String clientID) {
+	static Response<String> getClientInfo(ZkController controller, ClientID clientID) {
 		return getEntityInfo(controller, clientID);
 	}
 	
@@ -59,7 +60,7 @@ class Client extends SystemEntity {
 	 * @param clientID Client to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeClient(ZkController controller, String clientID) {
+	static Response<Boolean> removeClient(ZkController controller, ClientID clientID) {
 		return removeEntity(controller, clientID);
 	}
 }

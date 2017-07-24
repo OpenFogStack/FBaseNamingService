@@ -2,6 +2,7 @@ package namespace;
 
 import ZkSystem.ZkController;
 import model.config.NodeConfig;
+import model.data.NodeID;
 
 /**
  * The Node class performs all operations on the Nodes section of
@@ -36,7 +37,7 @@ class Node extends SystemEntity {
 	 * @param nodeID ID of node to get information from
 	 * @return Response object with String containing the Node information
 	 */
-	static Response<String> getNodeInfo(ZkController controller, String nodeID) {
+	static Response<String> getNodeInfo(ZkController controller, NodeID nodeID) {
 		return getEntityInfo(controller, nodeID);
 	}
 	
@@ -59,7 +60,7 @@ class Node extends SystemEntity {
 	 * @param nodeID Node to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeNode(ZkController controller, String nodeID) {
+	static Response<Boolean> removeNode(ZkController controller, NodeID nodeID) {
 		return removeEntity(controller, nodeID);
 	}
 }
