@@ -1,23 +1,15 @@
 package namespace;
 
-import java.util.List;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.type.TypeFactory;
-
 import ZkSystem.ZkController;
 import crypto.CryptoProvider;
 import crypto.CryptoProvider.EncryptionAlgorithm;
 import model.JSONable;
 import model.config.ClientConfig;
-import model.config.Config;
 import model.config.KeygroupConfig;
-import model.config.KeygroupMember;
 import model.config.NodeConfig;
 import model.config.ReplicaNodeConfig;
 import model.config.TriggerNodeConfig;
 import model.data.ClientID;
-import model.data.ConfigID;
 import model.data.KeygroupID;
 import model.data.NodeID;
 import model.messages.namingservice.Command;
@@ -30,23 +22,27 @@ public class MessageParser {
 	
 	public static Envelope decryptEnvelope(ZkController controller, Envelope encrypted) {
 		// TODO Error handling (bad encryption, node doesn't exist, data format problems, etc.)
-		NodeID nodeID = encrypted.getNodeID();
+		NodeID senderID = encrypted.getSenderID();
 		Message message = encrypted.getMessage();
 		
-		String nodeInfo = Node.getNodeInfo(controller, nodeID).getValue();
+		String nodeInfo = Node.getNodeInfo(controller, senderID).getValue();
 		NodeConfig node = JSONable.fromJSON(nodeInfo, NodeConfig.class);
 		String nodeKey = node.getPublicKey();
 		
-		Command command = CryptoProvider.decrypt(message.getCommand(), nodeKey, CryptoProvider.EncryptionAlgorithm.AES); // XXX Figure out enum decryption
+		Command command = Command.valueOf(CryptoProvider.decrypt(message.getCommand().toString(), nodeKey, CryptoProvider.EncryptionAlgorithm.AES)); // XXX Figure out enum decryption
 		String content = CryptoProvider.decrypt(message.getContent(), nodeKey, CryptoProvider.EncryptionAlgorithm.AES);
 		
-		Envelope decrypted = new Envelope(nodeID, new Message(command, content));
+		Envelope decrypted = new Envelope(senderID, new Message(command, content));
 		
 		return decrypted;
 	}
 	
+	public static Envelope encryptEnvelope() {
+		return null; // XXX
+	}
+	
 	public static Response<?> runCommand(ZkController controller, Envelope envelope) {
-		NodeID callingNodeID = envelope.getNodeID();
+		NodeID senderID = envelope.getSenderID();
 		Command command = envelope.getMessage().getCommand();
 		String content = envelope.getMessage().getContent();
 		
@@ -64,21 +60,21 @@ public class MessageParser {
 			case NODE_READ:
 				return nodeRead(controller, content);
 			case NODE_UPDATE:
-				return nodeUpdate(controller, content, callingNodeID);
+				return nodeUpdate(controller, content, senderID);
 			case NODE_DELETE:
-				return nodeDelete(controller, content, callingNodeID);
+				return nodeDelete(controller, content, senderID);
 			case KEYGROUP_CREATE:
 				return keygroupCreate(controller, content);
 			case KEYGROUP_ADD_REPLICA_NODE:
-				return keygroupAddReplicaNode(controller, content, callingNodeID);
+				return keygroupAddReplicaNode(controller, content, senderID);
 			case KEYGROUP_ADD_TRIGGER_NODE:
-				return keygroupAddTriggerNode(controller, content, callingNodeID);
+				return keygroupAddTriggerNode(controller, content, senderID);
 			case KEYGROUP_READ:
-				return keygroupRead(controller, content, callingNodeID);
+				return keygroupRead(controller, content, senderID);
 			case KEYGROUP_UPDATE_CRYPTO:
-				return keygroupUpdateCrypto(controller, content, callingNodeID);
+				return keygroupUpdateCrypto(controller, content, senderID);
 			case KEYGROUP_DELETE:
-				return keygroupDelete(controller, content, callingNodeID);
+				return keygroupDelete(controller, content, senderID);
 			default:
 				return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
@@ -114,18 +110,18 @@ public class MessageParser {
 		return Node.getNodeInfo(controller, nodeID);
 	}
 	
-	private static Response<?> nodeUpdate(ZkController controller, String content, NodeID callingNodeID) {
+	private static Response<?> nodeUpdate(ZkController controller, String content, NodeID senderID) {
 		NodeConfig node = JSONable.fromJSON(content, NodeConfig.class);
-		if(callingNodeID == node.getNodeID()) {
+		if(senderID == node.getNodeID()) {
 			return Node.updateNodeInfo(controller, node);
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
 	
-	private static Response<?> nodeDelete(ZkController controller, String content, NodeID callingNodeID) {
+	private static Response<?> nodeDelete(ZkController controller, String content, NodeID senderID) {
 		NodeID nodeID = JSONable.fromJSON(content, NodeID.class);
-		if(callingNodeID == nodeID) {
+		if(senderID == nodeID) {
 			return Node.removeNode(controller, nodeID);
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
@@ -137,7 +133,7 @@ public class MessageParser {
 		return Keygroup.createKeygroup(controller, keygroup);
 	}
 	
-	private static Response<?> keygroupAddReplicaNode(ZkController controller, String content, NodeID callingNodeID) {
+	private static Response<?> keygroupAddReplicaNode(ZkController controller, String content, NodeID senderID) {
 		// Get KeygroupID and node from JSON via wrapper
 		ConfigToKeygroupWrapper wrapper = JSONable.fromJSON(content, ConfigToKeygroupWrapper.class);
 		KeygroupID keygroupID = wrapper.getKeygroupID();
@@ -147,14 +143,14 @@ public class MessageParser {
 		String keygroupJSON = Keygroup.getKeygroupInfoAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
-		if(keygroup.containsReplicaNode(callingNodeID)) {
+		if(keygroup.containsReplicaNode(senderID)) {
 			return Keygroup.addReplicaNodeToKeygroup(controller, replicaNode, keygroup.getKeygroupID());
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
 	
-	private static Response<?> keygroupAddTriggerNode(ZkController controller, String content, NodeID callingNodeID) {
+	private static Response<?> keygroupAddTriggerNode(ZkController controller, String content, NodeID senderID) {
 		// Get KeygroupID and node from JSON via wrapper
 		ConfigToKeygroupWrapper wrapper = JSONable.fromJSON(content, ConfigToKeygroupWrapper.class);
 		KeygroupID keygroupID = wrapper.getKeygroupID();
@@ -164,23 +160,23 @@ public class MessageParser {
 		String keygroupJSON = Keygroup.getKeygroupInfoAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
-		if(keygroup.containsReplicaNode(callingNodeID)) {
+		if(keygroup.containsReplicaNode(senderID)) {
 			return Keygroup.addTriggerNodeToKeygroup(controller, triggerNode, keygroup.getKeygroupID());
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
 	
-	private static Response<?> keygroupRead(ZkController controller, String content, NodeID callingNodeID) {
+	private static Response<?> keygroupRead(ZkController controller, String content, NodeID senderID) {
 		KeygroupConfig keygroup = JSONable.fromJSON(content, KeygroupConfig.class);
-		if(keygroup.containsReplicaNode(callingNodeID) || keygroup.containsTriggerNode(callingNodeID)) {
+		if(keygroup.containsReplicaNode(senderID) || keygroup.containsTriggerNode(senderID)) {
 			return Keygroup.getKeygroupInfoAuthorized(controller, keygroup.getKeygroupID());
 		} else {
 			return Keygroup.getKeygroupInfoUnauthorized(controller, keygroup.getKeygroupID());
 		}
 	}
 	
-	private static Response<?> keygroupUpdateCrypto(ZkController controller, String content, NodeID callingNodeID) {
+	private static Response<?> keygroupUpdateCrypto(ZkController controller, String content, NodeID senderID) {
 		// Get KeygroupID and node from JSON via wrapper
 		CryptoToKeygroupWrapper wrapper = JSONable.fromJSON(content, CryptoToKeygroupWrapper.class);
 		KeygroupID keygroupID = wrapper.getKeygroupID();
@@ -191,21 +187,21 @@ public class MessageParser {
 		String keygroupJSON = Keygroup.getKeygroupInfoAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
-		if(keygroup.containsReplicaNode(callingNodeID)) {
+		if(keygroup.containsReplicaNode(senderID)) {
 			return Keygroup.updateKeygroupCrypto(controller, keygroupID, encryptionSecret, encryptionAlgorithm);
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
 	
-	private static Response<?> keygroupDelete(ZkController controller, String content, NodeID callingNodeID) {
+	private static Response<?> keygroupDelete(ZkController controller, String content, NodeID senderID) {
 		KeygroupID keygroupID = JSONable.fromJSON(content, KeygroupID.class);
 		
 		// Get keygroup specified from the KeygroupID
 		String keygroupJSON = Keygroup.getKeygroupInfoAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
-		if(keygroup.containsReplicaNode(callingNodeID)) {
+		if(keygroup.containsReplicaNode(senderID)) {
 			return Keygroup.removeKeygroup(controller, keygroupID);
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
