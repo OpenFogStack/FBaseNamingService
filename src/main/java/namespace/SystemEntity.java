@@ -2,7 +2,7 @@ package namespace;
 
 import org.apache.zookeeper.KeeperException;
 
-import ZkSystem.ZkController;
+import database.IControllable;
 import model.JSONable;
 import model.config.Config;
 import model.data.ConfigID;
@@ -41,7 +41,7 @@ abstract class SystemEntity {
 	 * @param controller Controller for interfacing with base distributed system
 	 * @return Response object with String containing an unused node ID
 	 */
-	static Response<String> getUnusedID(ZkController controller) {
+	static Response<String> getUnusedID(IControllable controller) {
 		return getUnusedID(controller, randomIDLength);
 	}
 	
@@ -52,7 +52,7 @@ abstract class SystemEntity {
 	 * @param length The length of the random string
 	 * @return Response object with String containing an unused node I
 	 */
-	static Response<String> getUnusedID(ZkController controller, int length) {
+	static Response<String> getUnusedID(IControllable controller, int length) {
 		try {
 			String nodeID = null;
 			
@@ -94,7 +94,7 @@ abstract class SystemEntity {
 	 * @param entity The entity to add
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> registerEntity(ZkController controller, ConfigID entityID, Config entity) {
+	protected static Response<Boolean> registerEntity(IControllable controller, ConfigID entityID, Config entity) {
 		// Parse entity to JSON and into byte[]
 		byte[] data = JSONable.toJSON(entity).getBytes();
 		
@@ -127,7 +127,7 @@ abstract class SystemEntity {
 	 * @param entityID ID of entity to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	protected static Response<String> getEntityInfo(ZkController controller, ConfigID entityID) {
+	protected static Response<String> getEntityInfo(IControllable controller, ConfigID entityID) {
 		try {
 			String data = null;
 			if(isActive(controller, entityID.toString())) {
@@ -156,7 +156,7 @@ abstract class SystemEntity {
 	 * @param entity The new entity information to be stored
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> updateEntityInfo(ZkController controller, ConfigID entityID, Config entity) {
+	protected static Response<Boolean> updateEntityInfo(IControllable controller, ConfigID entityID, Config entity) {
 		try {
 			if(isActive(controller, entityID.toString())) {
 				// Parse entity to JSON and into byte[]
@@ -191,7 +191,7 @@ abstract class SystemEntity {
 	 * @param entityID Config to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> removeEntity(ZkController controller, ConfigID entityID) {
+	protected static Response<Boolean> removeEntity(IControllable controller, ConfigID entityID) {
 		try {
 			if (controller.exists(activePath(entityID.toString()))) {
 				// Get data from client
@@ -247,7 +247,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean exists(ZkController controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean exists(IControllable controller, String suffix) throws KeeperException, InterruptedException {
 		return isActive(controller, suffix) || isTombstoned(controller, suffix);
 	}
 	
@@ -260,7 +260,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean isActive(ZkController controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean isActive(IControllable controller, String suffix) throws KeeperException, InterruptedException {
 		return controller.exists(pathPrefixActive + suffix);
 	}
 	
@@ -273,7 +273,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean isTombstoned(ZkController controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean isTombstoned(IControllable controller, String suffix) throws KeeperException, InterruptedException {
 		return controller.exists(pathPrefixTombstoned + suffix);
 	}
 }

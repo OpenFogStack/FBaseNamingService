@@ -1,6 +1,6 @@
 package namespace;
 
-import ZkSystem.ZkController;
+import database.IControllable;
 import model.config.NodeConfig;
 import model.data.NodeID;
 
@@ -26,7 +26,7 @@ class Node extends SystemEntity {
 	 * @param entity The NodeConfig object be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> registerNode(ZkController controller, NodeConfig entity) {
+	static Response<Boolean> registerNode(IControllable controller, NodeConfig entity) {
 		return registerEntity(controller, entity.getNodeID(), entity);
 	}
 	
@@ -37,7 +37,7 @@ class Node extends SystemEntity {
 	 * @param nodeID ID of node to get information from
 	 * @return Response object with String containing the Node information
 	 */
-	static Response<String> getNodeInfo(ZkController controller, NodeID nodeID) {
+	static Response<String> getNodeInfo(IControllable controller, NodeID nodeID) {
 		return getEntityInfo(controller, nodeID);
 	}
 	
@@ -48,7 +48,7 @@ class Node extends SystemEntity {
 	 * @param entity The new NodeConfig object to store
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> updateNodeInfo(ZkController controller, NodeConfig entity) {
+	static Response<Boolean> updateNodeInfo(IControllable controller, NodeConfig entity) {
 		return updateEntityInfo(controller, entity.getNodeID(), entity);
 	}
 	
@@ -60,7 +60,7 @@ class Node extends SystemEntity {
 	 * @param nodeID Node to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeNode(ZkController controller, NodeID nodeID) {
+	static Response<Boolean> removeNode(IControllable controller, NodeID nodeID) {
 		return removeEntity(controller, nodeID);
 	}
 }

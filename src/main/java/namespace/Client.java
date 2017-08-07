@@ -1,6 +1,6 @@
 package namespace;
 
-import ZkSystem.ZkController;
+import database.IControllable;
 import model.config.ClientConfig;
 import model.data.ClientID;
 
@@ -26,7 +26,7 @@ class Client extends SystemEntity {
 	 * @param entity The ClientConfig to be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> registerClient(ZkController controller, ClientConfig entity) {
+	static Response<Boolean> registerClient(IControllable controller, ClientConfig entity) {
 		return registerEntity(controller, entity.getClientID(), entity);
 	}
 	
@@ -37,7 +37,7 @@ class Client extends SystemEntity {
 	 * @param clientID ID of client to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	static Response<String> getClientInfo(ZkController controller, ClientID clientID) {
+	static Response<String> getClientInfo(IControllable controller, ClientID clientID) {
 		return getEntityInfo(controller, clientID);
 	}
 	
@@ -48,7 +48,7 @@ class Client extends SystemEntity {
 	 * @param entity The new ClientConfig object to store
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> updateClientInfo(ZkController controller, ClientConfig entity) {
+	static Response<Boolean> updateClientInfo(IControllable controller, ClientConfig entity) {
 		return updateEntityInfo(controller, entity.getClientID(), entity);
 	}
 	
@@ -60,7 +60,7 @@ class Client extends SystemEntity {
 	 * @param clientID Client to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeClient(ZkController controller, ClientID clientID) {
+	static Response<Boolean> removeClient(IControllable controller, ClientID clientID) {
 		return removeEntity(controller, clientID);
 	}
 }
