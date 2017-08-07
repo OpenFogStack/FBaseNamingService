@@ -67,7 +67,7 @@ public class MessageParserTest {
 		ClientConfig clientCreate = new ClientConfig(idCreate, keyCreate, algorithmCreate);
 		
 		Message messageCreate = new Message();
-		messageCreate.setCommand(Command.CLIENT_CREATE);
+		messageCreate.setCommand(Command.CLIENT_CONFIG_CREATE);
 		messageCreate.setContent(JSONable.toJSON(clientCreate));
 		
 		Envelope envelopeCreate = new Envelope(sender, messageCreate);
@@ -81,7 +81,7 @@ public class MessageParserTest {
 		ClientID idRead = new ClientID("test_client");
 		
 		Message messageRead = new Message();
-		messageRead.setCommand(Command.CLIENT_READ);
+		messageRead.setCommand(Command.CLIENT_CONFIG_READ);
 		messageRead.setContent(JSONable.toJSON(idRead));
 		
 		Envelope envelopeRead = new Envelope(sender, messageRead);
@@ -104,7 +104,7 @@ public class MessageParserTest {
 		ClientConfig clientUpdate = new ClientConfig(idUpdate, keyUpdate, algorithmUpdate);
 		
 		Message messageUpdate = new Message();
-		messageUpdate.setCommand(Command.CLIENT_UPDATE);
+		messageUpdate.setCommand(Command.CLIENT_CONFIG_UPDATE);
 		messageUpdate.setContent(JSONable.toJSON(clientUpdate));
 		
 		Envelope envelopeUpdate = new Envelope(sender, messageUpdate);
@@ -125,7 +125,7 @@ public class MessageParserTest {
 		ClientID idDelete = new ClientID("test_client");
 		
 		Message messageDelete = new Message();
-		messageDelete.setCommand(Command.CLIENT_DELETE);
+		messageDelete.setCommand(Command.CLIENT_CONFIG_DELETE);
 		messageDelete.setContent(JSONable.toJSON(idDelete));
 		
 		Envelope envelopeDelete = new Envelope(sender, messageDelete);

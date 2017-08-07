@@ -26,33 +26,33 @@ public class MessageParser {
 		String content = message.getContent();
 		
 		switch(command) {
-			case CLIENT_CREATE:
+			case CLIENT_CONFIG_CREATE:
 				return clientCreate(controller, content);
-			case CLIENT_READ:
+			case CLIENT_CONFIG_READ:
 				return clientRead(controller, content);
-			case CLIENT_UPDATE:
+			case CLIENT_CONFIG_UPDATE:
 				return clientUpdate(controller, content);
-			case CLIENT_DELETE:
+			case CLIENT_CONFIG_DELETE:
 				return clientDelete(controller, content);
-			case NODE_CREATE:
+			case NODE_CONFIG_CREATE:
 				return nodeCreate(controller, content);
-			case NODE_READ:
+			case NODE_CONFIG_READ:
 				return nodeRead(controller, content);
-			case NODE_UPDATE:
+			case NODE_CONFIG_UPDATE:
 				return nodeUpdate(controller, content, senderID);
-			case NODE_DELETE:
+			case NODE_CONFIG_DELETE:
 				return nodeDelete(controller, content, senderID);
-			case KEYGROUP_CREATE:
+			case KEYGROUP_CONFIG_CREATE:
 				return keygroupCreate(controller, content);
-			case KEYGROUP_ADD_REPLICA_NODE:
+			case KEYGROUP_CONFIG_ADD_REPLICA_NODE:
 				return keygroupAddReplicaNode(controller, content, senderID);
-			case KEYGROUP_ADD_TRIGGER_NODE:
+			case KEYGROUP_CONFIG_ADD_TRIGGER_NODE:
 				return keygroupAddTriggerNode(controller, content, senderID);
-			case KEYGROUP_READ:
+			case KEYGROUP_CONFIG_READ:
 				return keygroupRead(controller, content, senderID);
-			case KEYGROUP_UPDATE_CRYPTO:
+			case KEYGROUP_CONFIG_UPDATE_CRYPTO:
 				return keygroupUpdateCrypto(controller, content, senderID);
-			case KEYGROUP_DELETE:
+			case KEYGROUP_CONFIG_DELETE:
 				return keygroupDelete(controller, content, senderID);
 			default:
 				return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
