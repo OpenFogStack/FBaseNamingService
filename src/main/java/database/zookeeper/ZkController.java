@@ -1,4 +1,4 @@
-package ZkSystem;
+package database.zookeeper;
 
 import java.util.List;
 
@@ -7,7 +7,9 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.ZooDefs.Ids;
 
-public class ZkController {
+import database.IControllable;
+
+public class ZkController implements IControllable {
 	
 	private ZooKeeper zk;
 	

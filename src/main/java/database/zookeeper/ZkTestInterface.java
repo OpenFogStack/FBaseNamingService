@@ -1,4 +1,4 @@
-package ZkSystem;
+package database.zookeeper;
 
 import java.io.IOException;
 import java.util.List;
@@ -14,9 +14,11 @@ import org.apache.zookeeper.KeeperException.NotEmptyException;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.common.PathUtils;
 
+import database.IControllable;
+
 public class ZkTestInterface {
 	
-	private static ZkController controller;
+	private static IControllable controller;
 	public static Scanner scanner = new Scanner(System.in);
 	
 	private static void printInstructions() {
