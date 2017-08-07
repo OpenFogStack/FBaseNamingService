@@ -1,14 +1,12 @@
 package namespace;
 
-import org.apache.zookeeper.KeeperException;
-
 import database.IControllable;
 import model.JSONable;
 import model.config.Config;
 import model.data.ConfigID;
 
 /**
- * The SystemEntity class is the parent class for subsystems within the ZooKeeper
+ * The SystemEntity class is the parent class for subsystems within the database
  * distributed system storing the namespace.
  * 
  * @author Wm. Keith van der Meulen
@@ -77,9 +75,6 @@ abstract class SystemEntity {
 			} while(exists(controller, nodeID));
 			
 			return new Response<String>(nodeID, ResponseCode.SUCCESS);
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<String>(null, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
@@ -95,25 +90,22 @@ abstract class SystemEntity {
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
 	protected static Response<Boolean> registerEntity(IControllable controller, ConfigID entityID, Config entity) {
-		// Parse entity to JSON and into byte[]
-		byte[] data = JSONable.toJSON(entity).getBytes();
+		// Parse entity to JSON
+		String data = JSONable.toJSON(entity);
 		
 		if (data == null) {
 			return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
 		}
 		
-		// Add ZkNode to system
+		// Add node to system
 		try {
-			// Check if ZkNode already exists
+			// Check if node already exists
 			if(exists(controller, entityID.toString())) {
 				return new Response<Boolean>(false, ResponseCode.ERROR_ALREADY_EXISTS);
 			}
 			
 			controller.addNode(activePath(entityID.toString()), data);
 			return new Response<Boolean>(true, ResponseCode.SUCCESS);
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
@@ -139,9 +131,6 @@ abstract class SystemEntity {
 			}
 
 			return new Response<String>(data, ResponseCode.SUCCESS);
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<String>(null, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
@@ -159,8 +148,8 @@ abstract class SystemEntity {
 	protected static Response<Boolean> updateEntityInfo(IControllable controller, ConfigID entityID, Config entity) {
 		try {
 			if(isActive(controller, entityID.toString())) {
-				// Parse entity to JSON and into byte[]
-				byte[] data = JSONable.toJSON(entity).getBytes();
+				// Parse entity to JSON
+				String data = JSONable.toJSON(entity);
 				
 				if(data == null) {
 					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
@@ -174,9 +163,6 @@ abstract class SystemEntity {
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
@@ -195,7 +181,7 @@ abstract class SystemEntity {
 		try {
 			if (controller.exists(activePath(entityID.toString()))) {
 				// Get data from client
-				byte[] data = controller.readNode(activePath(entityID.toString()));
+				String data = controller.readNode(activePath(entityID.toString()));
 				
 				// Copy client to tombstoned path
 				controller.addNode(tombstonedPath(entityID.toString()), data);
@@ -244,7 +230,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean exists(IControllable controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean exists(IControllable controller, String suffix) throws InterruptedException {
 		return isActive(controller, suffix) || isTombstoned(controller, suffix);
 	}
 	
@@ -257,7 +243,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean isActive(IControllable controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean isActive(IControllable controller, String suffix) throws InterruptedException {
 		return controller.exists(pathPrefixActive + suffix);
 	}
 	
@@ -270,7 +256,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean isTombstoned(IControllable controller, String suffix) throws KeeperException, InterruptedException {
+	protected static boolean isTombstoned(IControllable controller, String suffix) throws InterruptedException {
 		return controller.exists(pathPrefixTombstoned + suffix);
 	}
 }

@@ -22,7 +22,7 @@ import model.data.NodeID;
  * 
  * @author Wm. Keith van der Meulen
  */
-abstract class Keygroup extends SystemEntity {
+class Keygroup extends SystemEntity {
 	
 	/**
 	 * Name of the entity type
@@ -44,7 +44,7 @@ abstract class Keygroup extends SystemEntity {
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
 				// Parse key group to JSON and into byte[]
-				byte[] data = JSONable.toJSON(entity).getBytes();
+				String data = JSONable.toJSON(entity);
 				
 				if(data == null) {
 					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
@@ -52,21 +52,18 @@ abstract class Keygroup extends SystemEntity {
 				
 				// Build App Node if necessary
 				if(!isActive(controller, entity.getKeygroupID().getAppPath())) {
-					controller.addNode(activePath(entity.getKeygroupID().getAppPath()), "".getBytes());
+					controller.addNode(activePath(entity.getKeygroupID().getAppPath()), "");
 				}
 				
 				// Build Tenant Node if necessary
 				if(!isActive(controller, entity.getKeygroupID().getTenantPath())) {
-					controller.addNode(activePath(entity.getKeygroupID().getTenantPath()), "".getBytes());
+					controller.addNode(activePath(entity.getKeygroupID().getTenantPath()), "");
 				}
 				
 				// Build Keygroup Node
 				controller.addNode(activePath(entity.getKeygroupID().toString()), data);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} 
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
@@ -110,12 +107,12 @@ abstract class Keygroup extends SystemEntity {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
 				// Get current data from key group
-				byte[] data = controller.readNode(keygroupID.toString());
+				String data = controller.readNode(keygroupID.toString());
 				
 				// Parse to object, add nodeID to list, parse back to byte[]
 				KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 				addToList.accept(keygroup, node);
-				data = JSONable.toJSON(keygroup).getBytes();
+				data = JSONable.toJSON(keygroup);
 				
 				// Update key group
 				controller.updateNode(activePath(keygroupID.toString()), data);
@@ -125,9 +122,6 @@ abstract class Keygroup extends SystemEntity {
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
@@ -180,9 +174,6 @@ abstract class Keygroup extends SystemEntity {
 			}
 			
 			return new Response<String>(data, ResponseCode.SUCCESS);
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<String>(null, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
@@ -199,7 +190,7 @@ abstract class Keygroup extends SystemEntity {
 	 */
 	static Response<String> getKeygroupInfoUnauthorized(IControllable controller, KeygroupID keygroupID) {
 		try {
-			byte[] data = null;
+			String data = null;
 			if(isActive(controller, keygroupID.toString())) {
 				data = controller.readNode(activePath(keygroupID.toString()));
 			} else if (isTombstoned(controller, keygroupID.toString())) {
@@ -212,12 +203,9 @@ abstract class Keygroup extends SystemEntity {
 			KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 			keygroup.setEncryptionAlgorithm(null);
 			keygroup.setEncryptionSecret(null);
-			data = JSONable.toJSON(keygroup).getBytes();
+			data = JSONable.toJSON(keygroup);
 			
 			return new Response<String>(data.toString(), ResponseCode.SUCCESS);
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<String>(null, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
@@ -237,12 +225,12 @@ abstract class Keygroup extends SystemEntity {
 	static Response<Boolean> updateKeygroupCrypto(IControllable controller, KeygroupID keygroupID, String encryptionSecret, EncryptionAlgorithm encryptionAlgorithm) {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
-				byte[] data = controller.readNode(activePath(keygroupID.toString()));
+				String data = controller.readNode(activePath(keygroupID.toString()));
 				
 				KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 				keygroup.setEncryptionSecret(encryptionSecret);
 				keygroup.setEncryptionAlgorithm(encryptionAlgorithm);
-				data = JSONable.toJSON(keygroup).getBytes();
+				data = JSONable.toJSON(keygroup);
 				
 				controller.updateNode(activePath(keygroupID.toString()), data);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
@@ -251,9 +239,6 @@ abstract class Keygroup extends SystemEntity {
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
@@ -283,7 +268,7 @@ abstract class Keygroup extends SystemEntity {
 	 * @throws InterruptedException
 	 */
 	private static Response<Boolean> removeNodeFromActiveKeygroup(IControllable controller, NodeID nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
-		byte[] data = controller.readNode(activePath(keygroupID.toString()));
+		String data = controller.readNode(activePath(keygroupID.toString()));
 		
 		// Parse to object
 		KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
@@ -302,7 +287,7 @@ abstract class Keygroup extends SystemEntity {
 			return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 		}
 		
-		data = JSONable.toJSON(keygroup).getBytes();
+		data = JSONable.toJSON(keygroup);
 		
 		// Update the ZkNode
 		controller.updateNode(activePath(keygroupID.toString()), data);
@@ -320,7 +305,7 @@ abstract class Keygroup extends SystemEntity {
 	 * @throws InterruptedException
 	 */
 	private static Response<Boolean> removeNodeFromTombstonedKeygroup(IControllable controller, NodeID nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
-		byte[] data = controller.readNode(tombstonedPath(keygroupID.toString()));
+		String data = controller.readNode(tombstonedPath(keygroupID.toString()));
 		
 		// Parse to object
 		KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
@@ -344,7 +329,7 @@ abstract class Keygroup extends SystemEntity {
 			return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 		}
 		
-		data = JSONable.toJSON(keygroup).getBytes();
+		data = JSONable.toJSON(keygroup);
 		
 		// Update the ZkNode
 		controller.updateNode(tombstonedPath(keygroupID.toString()), data);

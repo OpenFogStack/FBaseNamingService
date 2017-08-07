@@ -19,7 +19,7 @@ public class LocalFileController implements IControllable {
 	}
 	
 	@Override
-	public void addNode(String path, byte[] data) throws IllegalArgumentException {
+	public void addNode(String path, String data) throws IllegalArgumentException {
 		File f = new File(rootDir, path);
 		if(f.exists()) {
 			throw new IllegalArgumentException("Path '" + path + "' already exists.");
@@ -30,7 +30,7 @@ public class LocalFileController implements IControllable {
 		f = new File(f, dataFileName);
 		try {
 			PrintWriter writer = new PrintWriter(f);
-			writer.println(new String(data));
+			writer.println(data);
 			writer.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
@@ -38,7 +38,7 @@ public class LocalFileController implements IControllable {
 	}
 
 	@Override
-	public byte[] readNode(String path) throws IllegalArgumentException {
+	public String readNode(String path) throws IllegalArgumentException {
 		File f = new File(rootDir, path + dataFileName);
 		
 		String content = null;
@@ -55,11 +55,11 @@ public class LocalFileController implements IControllable {
 			e.printStackTrace();
 		}
 		
-		return content.getBytes();
+		return content;
 	}
 
 	@Override
-	public void updateNode(String path, byte[] data) throws IllegalArgumentException {
+	public void updateNode(String path, String data) throws IllegalArgumentException {
 		File f = new File(rootDir, path);
 		if(!f.exists()) {
 			throw new IllegalArgumentException("Path '" + path + "' doesn't exist.");
@@ -68,7 +68,7 @@ public class LocalFileController implements IControllable {
 		f = new File(f, dataFileName);
 		try {
 			PrintWriter writer = new PrintWriter(f);
-			writer.println(new String(data));
+			writer.println(data);
 			writer.close();
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();

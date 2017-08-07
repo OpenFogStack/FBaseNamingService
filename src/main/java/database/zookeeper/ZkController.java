@@ -22,9 +22,9 @@ public class ZkController implements IControllable {
 	}
 	
 	@Override
-	public void addNode(String path, byte[] data) throws IllegalArgumentException {
+	public void addNode(String path, String data) throws IllegalArgumentException {
 		try {
-			zk.create(path, data, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+			zk.create(path, data.getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
 		} catch (KeeperException e) {
 			if(e instanceof NodeExistsException) {
 				throw new IllegalArgumentException("Path '" + path + "' already exists.");
@@ -39,7 +39,7 @@ public class ZkController implements IControllable {
 	}
 	
 	@Override
-	public byte[] readNode(String path) throws IllegalArgumentException {
+	public String readNode(String path) throws IllegalArgumentException {
 		byte[] data = null;
 		try {
 			data = zk.getData(path, true, zk.exists(path, true));
@@ -53,13 +53,13 @@ public class ZkController implements IControllable {
 			e.printStackTrace();
 		}
 		
-		return data;
+		return new String(data);
 	}
 	
 	@Override
-	public void updateNode(String path, byte[] data) throws IllegalArgumentException {
+	public void updateNode(String path, String data) throws IllegalArgumentException {
 		try {
-			zk.setData(path, data, zk.exists(path, true).getVersion());
+			zk.setData(path, data.getBytes(), zk.exists(path, true).getVersion());
 		} catch (KeeperException e) {
 			e.printStackTrace();
 		} catch (InterruptedException e) {

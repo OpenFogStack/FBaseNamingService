@@ -98,11 +98,11 @@ public class TestInterface {
 		return path;
 	}
 	
-	private static byte[] getData() {
+	private static String getData() {
 		System.out.println("Please enter JSON data:");
 		String input = scanner.nextLine();
 		
-		return input.getBytes();
+		return input;
 	}
 	
 	private static void useLocalFiles() {
@@ -154,9 +154,8 @@ public class TestInterface {
 						break;
 						
 					case "readNode":
-						byte[] data = controller.readNode(getPath());
-						for(byte b : data) {System.out.print((char) b);}
-						System.out.print("\n");
+						String data = controller.readNode(getPath());
+						System.out.println(data);
 						break;
 						
 					case "updateNode":
