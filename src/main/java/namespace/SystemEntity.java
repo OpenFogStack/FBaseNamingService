@@ -209,10 +209,7 @@ abstract class SystemEntity {
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_OTHER);
-		} catch (InterruptedException e) {
+		}  catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
