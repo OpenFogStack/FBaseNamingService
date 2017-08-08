@@ -14,10 +14,19 @@ import model.data.NodeID;
  */
 class Node extends SystemEntity {
 	
-	/**
-	 * Name of the entity type
-	 */
-	static final String type = "node";
+	static Node instance;
+	
+	public static Node getInstance() {
+		if(instance == null) {
+			instance = new Node();
+		}
+		
+		return instance;
+	}
+	
+	private Node() {
+		super("node");
+	}
 	
 	/**
 	 * Registers a node with the FBase system
@@ -26,7 +35,7 @@ class Node extends SystemEntity {
 	 * @param entity The NodeConfig object be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> registerNode(IControllable controller, NodeConfig entity) {
+	Response<Boolean> registerNode(IControllable controller, NodeConfig entity) {
 		return registerEntity(controller, entity.getNodeID(), entity);
 	}
 	
@@ -37,7 +46,7 @@ class Node extends SystemEntity {
 	 * @param nodeID ID of node to get information from
 	 * @return Response object with String containing the Node information
 	 */
-	static Response<String> getNodeInfo(IControllable controller, NodeID nodeID) {
+	Response<String> getNodeInfo(IControllable controller, NodeID nodeID) {
 		return getEntityInfo(controller, nodeID);
 	}
 	
@@ -48,7 +57,7 @@ class Node extends SystemEntity {
 	 * @param entity The new NodeConfig object to store
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> updateNodeInfo(IControllable controller, NodeConfig entity) {
+	Response<Boolean> updateNodeInfo(IControllable controller, NodeConfig entity) {
 		return updateEntityInfo(controller, entity.getNodeID(), entity);
 	}
 	
@@ -60,7 +69,7 @@ class Node extends SystemEntity {
 	 * @param nodeID Node to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeNode(IControllable controller, NodeID nodeID) {
+	Response<Boolean> removeNode(IControllable controller, NodeID nodeID) {
 		return removeEntity(controller, nodeID);
 	}
 }

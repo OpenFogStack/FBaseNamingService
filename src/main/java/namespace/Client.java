@@ -14,10 +14,19 @@ import model.data.ClientID;
  */
 class Client extends SystemEntity {
 	
-	/**
-	 * Name of the entity type
-	 */
-	static final String type = "client";
+	static Client instance;
+	
+	public static Client getInstance() {
+		if(instance == null) {
+			instance = new Client();
+		}
+		
+		return instance;
+	}
+	
+	private Client() {
+		super("client");
+	}
 	
 	/**
 	 * Registers a client with the FBase system
@@ -26,7 +35,7 @@ class Client extends SystemEntity {
 	 * @param entity The ClientConfig to be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> registerClient(IControllable controller, ClientConfig entity) {
+	Response<Boolean> registerClient(IControllable controller, ClientConfig entity) {
 		return registerEntity(controller, entity.getClientID(), entity);
 	}
 	
@@ -37,7 +46,7 @@ class Client extends SystemEntity {
 	 * @param clientID ID of client to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	static Response<String> getClientInfo(IControllable controller, ClientID clientID) {
+	Response<String> getClientInfo(IControllable controller, ClientID clientID) {
 		return getEntityInfo(controller, clientID);
 	}
 	
@@ -48,7 +57,7 @@ class Client extends SystemEntity {
 	 * @param entity The new ClientConfig object to store
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> updateClientInfo(IControllable controller, ClientConfig entity) {
+	Response<Boolean> updateClientInfo(IControllable controller, ClientConfig entity) {
 		return updateEntityInfo(controller, entity.getClientID(), entity);
 	}
 	
@@ -60,7 +69,7 @@ class Client extends SystemEntity {
 	 * @param clientID Client to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	static Response<Boolean> removeClient(IControllable controller, ClientID clientID) {
+	Response<Boolean> removeClient(IControllable controller, ClientID clientID) {
 		return removeEntity(controller, clientID);
 	}
 }

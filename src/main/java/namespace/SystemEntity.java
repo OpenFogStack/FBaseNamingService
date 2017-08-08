@@ -14,32 +14,32 @@ import model.data.ConfigID;
 abstract class SystemEntity {
 	
 	/**
-	 * Name of the entity type
-	 */
-	protected static String type;
-	
-	/**
 	 * System prefix for location of all active SystemEntities
 	 */
-	protected static String pathPrefixActive = "/" + type + "/active/";
+	protected final String pathPrefixActive;
 	
 	/**
 	 * System prefix for location of all tombstoned SystemEntities
 	 */
-	protected static String pathPrefixTombstoned = "/" + type + "/tombstoned/";
+	protected final String pathPrefixTombstoned;
 	
 	/**
 	 * Length of random strings generated in getUnusedNodeID()
 	 */
 	private static final int randomIDLength = 32;
 	
+	SystemEntity(String type) {
+		pathPrefixActive = "/" + type + "/active/";
+		pathPrefixTombstoned = "/" + type + "/tombstoned/";
+	}
+
 	/**
 	 * Responds with a random string unused by any node at the time of the call
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
 	 * @return Response object with String containing an unused node ID
 	 */
-	static Response<String> getUnusedID(IControllable controller) {
+	Response<String> getUnusedID(IControllable controller) {
 		return getUnusedID(controller, randomIDLength);
 	}
 	
@@ -50,7 +50,7 @@ abstract class SystemEntity {
 	 * @param length The length of the random string
 	 * @return Response object with String containing an unused node I
 	 */
-	static Response<String> getUnusedID(IControllable controller, int length) {
+	Response<String> getUnusedID(IControllable controller, int length) {
 		try {
 			String nodeID = null;
 			
@@ -89,7 +89,7 @@ abstract class SystemEntity {
 	 * @param entity The entity to add
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> registerEntity(IControllable controller, ConfigID entityID, Config entity) {
+	protected Response<Boolean> registerEntity(IControllable controller, ConfigID entityID, Config entity) {
 		// Parse entity to JSON
 		String data = JSONable.toJSON(entity);
 		
@@ -119,7 +119,7 @@ abstract class SystemEntity {
 	 * @param entityID ID of entity to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	protected static Response<String> getEntityInfo(IControllable controller, ConfigID entityID) {
+	protected Response<String> getEntityInfo(IControllable controller, ConfigID entityID) {
 		try {
 			String data = null;
 			if(isActive(controller, entityID.toString())) {
@@ -145,7 +145,7 @@ abstract class SystemEntity {
 	 * @param entity The new entity information to be stored
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> updateEntityInfo(IControllable controller, ConfigID entityID, Config entity) {
+	protected Response<Boolean> updateEntityInfo(IControllable controller, ConfigID entityID, Config entity) {
 		try {
 			if(isActive(controller, entityID.toString())) {
 				// Parse entity to JSON
@@ -177,7 +177,7 @@ abstract class SystemEntity {
 	 * @param entityID Config to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected static Response<Boolean> removeEntity(IControllable controller, ConfigID entityID) {
+	protected Response<Boolean> removeEntity(IControllable controller, ConfigID entityID) {
 		try {
 			if (controller.exists(activePath(entityID.toString()))) {
 				// Get data from client
@@ -207,7 +207,7 @@ abstract class SystemEntity {
 	 * @param suffix The variable part of the system path
 	 * @return Proper system path to SystemEntity
 	 */
-	protected static String activePath(String suffix) {
+	protected String activePath(String suffix) {
 		return pathPrefixActive + suffix;
 	}
 	
@@ -217,7 +217,7 @@ abstract class SystemEntity {
 	 * @param suffix The variable part of the system path
 	 * @return Proper system path to SystemEntity
 	 */
-	protected static String tombstonedPath(String suffix) {
+	protected String tombstonedPath(String suffix) {
 		return pathPrefixTombstoned + suffix;
 	}
 	
@@ -230,7 +230,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean exists(IControllable controller, String suffix) throws InterruptedException {
+	protected boolean exists(IControllable controller, String suffix) throws InterruptedException {
 		return isActive(controller, suffix) || isTombstoned(controller, suffix);
 	}
 	
@@ -243,8 +243,10 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean isActive(IControllable controller, String suffix) throws InterruptedException {
-		return controller.exists(pathPrefixActive + suffix);
+	protected boolean isActive(IControllable controller, String suffix) throws InterruptedException {
+		boolean temp = controller.exists(pathPrefixActive + suffix);
+		
+		return temp;
 	}
 	
 	/**
@@ -256,7 +258,7 @@ abstract class SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	protected static boolean isTombstoned(IControllable controller, String suffix) throws InterruptedException {
+	protected boolean isTombstoned(IControllable controller, String suffix) throws InterruptedException {
 		return controller.exists(pathPrefixTombstoned + suffix);
 	}
 }
