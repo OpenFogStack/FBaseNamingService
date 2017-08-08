@@ -1,21 +1,24 @@
 package namespace;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.IOException;
+import java.io.File;
 
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooKeeper;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import control.Configuration;
+import control.NamingService;
 import crypto.CryptoProvider.EncryptionAlgorithm;
-import database.zookeeper.ZkConnector;
-import database.zookeeper.ZkController;
+import database.IControllable;
+import database.localfiles.LocalFileController;
 import model.JSONable;
 import model.config.ClientConfig;
 import model.data.ClientID;
@@ -25,23 +28,12 @@ import model.messages.Envelope;
 import model.messages.Message;
 
 public class MessageParserTest {
-	private static ZkController controller;
+	private static IControllable controller;
 	private static NodeID sender;
+	private static NamingService ns;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-		ZkConnector connector = new ZkConnector();
-		
-		ZooKeeper zk = null;
-		try {
-			zk = connector.connect("localhost");
-		} catch (IllegalStateException | IOException | InterruptedException e) {
-			e.printStackTrace();
-		}
-		
-		controller = new ZkController(zk);
-		
-		
 	}
 
 	@AfterClass
@@ -50,14 +42,36 @@ public class MessageParserTest {
 
 	@Before
 	public void setUp() throws Exception {
+		Configuration configuration = new Configuration();
+		controller = new LocalFileController(new File(configuration.getRoot()));
+		sender = new NodeID("sender");
+		ns = new NamingService(controller, configuration);
 	}
 
 	@After
 	public void tearDown() throws Exception {
+		// Wait required so that all files are fully created before deleting
+		java.util.concurrent.TimeUnit.SECONDS.sleep(5);
+		
+		Configuration configuration = new Configuration();
+		File root = new File(configuration.getRoot());
+		deleteDir(new File(root, "client"));
+		deleteDir(new File(root, "node"));
+		deleteDir(new File(root, "keygroup"));
+	}
+	
+	void deleteDir(File file) {
+	    File[] contents = file.listFiles();
+	    if (contents != null) {
+	        for (File f : contents) {
+	            deleteDir(f);
+	        }
+	    }
+	    file.delete();
 	}
 	
 	@Test
-	public void clientCRUDTest() throws KeeperException, InterruptedException {
+	public void clientCRUDTest() throws InterruptedException {
 		// Test create
 		
 		ClientID idCreate = new ClientID("test_client");
@@ -74,7 +88,7 @@ public class MessageParserTest {
 		
 		Response<Boolean> responseCreate = (Response<Boolean>) MessageParser.runCommand(controller, envelopeCreate);
 		assertTrue("Client properly registered", responseCreate.getValue());
-		assertTrue("Client in ZooKeeper system", controller.exists("/client/active/test_client"));
+		assertTrue("Client in system", controller.exists("/client/active/test_client"));
 		
 		// Test Read
 		
@@ -87,13 +101,13 @@ public class MessageParserTest {
 		Envelope envelopeRead = new Envelope(sender, messageRead);
 		
 		Response<String> responseRead = (Response<String>) MessageParser.runCommand(controller, envelopeRead);
-		assertTrue("Client properly read", responseRead.getMessage() != null);
+		assertNotNull("Client properly read", responseRead.getMessage());
 		
-		ClientConfig clientReadCheck = JSONable.fromJSON(responseRead.getMessage(), ClientConfig.class);
+		ClientConfig clientReadCheck = JSONable.fromJSON(responseRead.getValue(), ClientConfig.class);
 		
-		assertTrue("Reads correct ID", clientReadCheck.getClientID().getID().equals("test_client"));
-		assertTrue("Reads correct key", clientReadCheck.getPublicKey().equals("my_public_key"));
-		assertTrue("Reads correct algorithm", clientReadCheck.getEncryptionAlgorithm().equals(EncryptionAlgorithm.AES));
+		assertEquals("Reads correct ID", "test_client", clientReadCheck.getClientID().getID());
+		assertEquals("Reads correct key", "my_public_key", clientReadCheck.getPublicKey());
+		assertEquals("Reads correct algorithm", EncryptionAlgorithm.AES, clientReadCheck.getEncryptionAlgorithm());
 		
 		// Test Update
 		
@@ -114,11 +128,11 @@ public class MessageParserTest {
 		
 		Response<String> responseReadUpdate = (Response<String>) MessageParser.runCommand(controller, envelopeRead);
 		
-		ClientConfig clientReadUpdate = JSONable.fromJSON(responseReadUpdate.getMessage(), ClientConfig.class);
+		ClientConfig clientReadUpdate = JSONable.fromJSON(responseReadUpdate.getValue(), ClientConfig.class);
 		
-		assertTrue("Reads correct updated ID", clientReadUpdate.getClientID().getID().equals("test_client"));
-		assertTrue("Reads correct updated key", clientReadUpdate.getPublicKey().equals("my_public_key_new"));
-		assertTrue("Reads correct updated algorithm", clientReadUpdate.getEncryptionAlgorithm().equals(EncryptionAlgorithm.AES));
+		assertEquals("Reads correct updated ID", "test_client", clientReadUpdate.getClientID().getID());
+		assertEquals("Reads correct updated key", "my_public_key_new", clientReadUpdate.getPublicKey());
+		assertEquals("Reads correct updated algorithm", EncryptionAlgorithm.AES, clientReadUpdate.getEncryptionAlgorithm());
 		
 		// Test Delete
 		
@@ -132,57 +146,19 @@ public class MessageParserTest {
 		
 		Response<Boolean> responseDelete = (Response<Boolean>) MessageParser.runCommand(controller, envelopeDelete);
 		assertTrue("Client properly registered", responseDelete.getValue());
-		assertTrue("Client in ZooKeeper system", controller.exists("/client/active/test_client") == false);
+		assertFalse("Client in system", controller.exists("/client/active/test_client"));
+		assertTrue("Client in system", controller.exists("/client/tombstoned/test_client"));
 	}
 	
+	/*
 	@Test
-	public void nodeCreateTest() {
+	public void nodeCRUDTest() {
 		fail("Not yet implemented");
 	}
 	
 	@Test
-	public void nodeReadTest() {
+	public void keygroupCRUDTest() {
 		fail("Not yet implemented");
 	}
-	
-	@Test
-	public void nodeUpdateTest() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	public void nodeDeleteTest() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	public void keygroupCreateTest() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	public void keygroupAddReplicaNodeTest() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	public void keygroupAddTriggerNodeTest() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	public void keygroupReadTest() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	public void keygroupUpdateCryptoTest() {
-		fail("Not yet implemented");
-	}
-	
-	@Test
-	public void keygroupDeletTest() {
-		fail("Not yet implemented");
-	}
-
+	*/
 }
