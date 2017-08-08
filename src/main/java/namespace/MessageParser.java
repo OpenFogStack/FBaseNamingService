@@ -95,7 +95,7 @@ public class MessageParser {
 	
 	private static Response<?> nodeUpdate(IControllable controller, String content, NodeID senderID) {
 		NodeConfig node = JSONable.fromJSON(content, NodeConfig.class);
-		if(senderID == node.getNodeID()) {
+		if(senderID.equals(node.getNodeID())) {
 			return Node.getInstance().updateNodeInfo(controller, node);
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
@@ -104,7 +104,7 @@ public class MessageParser {
 	
 	private static Response<?> nodeDelete(IControllable controller, String content, NodeID senderID) {
 		NodeID nodeID = JSONable.fromJSON(content, NodeID.class);
-		if(senderID == nodeID) {
+		if(senderID.equals(nodeID)) {
 			return Node.getInstance().removeNode(controller, nodeID);
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
