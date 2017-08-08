@@ -33,6 +33,8 @@ public class TestInterface {
 		boolean error = false;
 		FileSystem choice = null;
 		do {
+			error = false;
+			
 			try {
 				int input = Integer.parseInt(scanner.nextLine());
 				
