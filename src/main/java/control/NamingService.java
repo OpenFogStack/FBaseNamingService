@@ -3,8 +3,8 @@ package control;
 import java.util.ArrayList;
 import java.util.List;
 
+import communication.NamespaceReceiver;
 import database.IControllable;
-import namespace.NamespaceReceiver;
 
 public class NamingService {
 	
