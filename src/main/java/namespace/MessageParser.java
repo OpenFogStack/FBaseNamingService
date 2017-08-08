@@ -54,6 +54,8 @@ public class MessageParser {
 				return keygroupUpdateCrypto(controller, content, senderID);
 			case KEYGROUP_CONFIG_DELETE:
 				return keygroupDelete(controller, content, senderID);
+			case KEYGROUP_CONFIG_DELETE_NODE:
+				// TODO 
 			default:
 				return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}

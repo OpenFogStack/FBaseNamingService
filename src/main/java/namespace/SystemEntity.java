@@ -11,7 +11,7 @@ import model.data.ConfigID;
  * 
  * @author Wm. Keith van der Meulen
  */
-abstract class SystemEntity {
+public abstract class SystemEntity {
 	
 	/**
 	 * System prefix for location of all active SystemEntities

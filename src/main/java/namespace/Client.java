@@ -12,9 +12,9 @@ import model.data.ClientID;
  * 
  * @author Wm. Keith van der Meulen
  */
-class Client extends SystemEntity {
+public class Client extends SystemEntity {
 	
-	static Client instance;
+	private static Client instance;
 	
 	public static Client getInstance() {
 		if(instance == null) {
@@ -46,7 +46,7 @@ class Client extends SystemEntity {
 	 * @param clientID ID of client to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	Response<String> getClientInfo(IControllable controller, ClientID clientID) {
+	public Response<String> getClientInfo(IControllable controller, ClientID clientID) {
 		return getEntityInfo(controller, clientID);
 	}
 	

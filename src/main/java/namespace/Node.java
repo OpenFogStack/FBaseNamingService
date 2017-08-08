@@ -12,9 +12,9 @@ import model.data.NodeID;
  * 
  * @author Wm. Keith van der Meulen
  */
-class Node extends SystemEntity {
+public class Node extends SystemEntity {
 	
-	static Node instance;
+	private static Node instance;
 	
 	public static Node getInstance() {
 		if(instance == null) {
@@ -46,7 +46,7 @@ class Node extends SystemEntity {
 	 * @param nodeID ID of node to get information from
 	 * @return Response object with String containing the Node information
 	 */
-	Response<String> getNodeInfo(IControllable controller, NodeID nodeID) {
+	public Response<String> getNodeInfo(IControllable controller, NodeID nodeID) {
 		return getEntityInfo(controller, nodeID);
 	}
 	

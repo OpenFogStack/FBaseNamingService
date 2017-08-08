@@ -22,9 +22,9 @@ import model.data.NodeID;
  * 
  * @author Wm. Keith van der Meulen
  */
-class Keygroup extends SystemEntity {
+public class Keygroup extends SystemEntity {
 	
-	static Keygroup instance;
+	private static Keygroup instance;
 	
 	public static Keygroup getInstance() {
 		if(instance == null) {
