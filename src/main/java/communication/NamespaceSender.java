@@ -1,4 +1,4 @@
-package namespace;
+package communication;
 
 import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
@@ -23,7 +23,7 @@ public class NamespaceSender extends AbstractSender {
 	 * Initializes the NamespaceSender, it then can be used without further modifications.
 	 */
 	public NamespaceSender(String address, int port, String secret, EncryptionAlgorithm algorithm) {
-		super(address, port, secret, algorithm, ZMQ.REQ);
+		super(address, port, ZMQ.REQ);
 	}
 
 	/**
@@ -33,7 +33,7 @@ public class NamespaceSender extends AbstractSender {
 	 * @return the response
 	 */
 	@Override
-	public String send(Envelope envelope) {
+	public String send(Envelope envelope, String secret, EncryptionAlgorithm algorithm) {
 		logger.debug("Sending envelope with keygroup " + envelope.getKeygroupID());
 		sender.sendMore(envelope.getKeygroupID().getID());
 		sender.send(
