@@ -116,9 +116,9 @@ public class MessageParserTest {
 		
 		ClientConfig clientReadUpdate = JSONable.fromJSON(responseReadUpdate.getMessage(), ClientConfig.class);
 		
-		assertTrue("Reads correct updated ID", clientReadCheck.getClientID().getID().equals("test_client"));
-		assertTrue("Reads correct updated key", clientReadCheck.getPublicKey().equals("my_public_key_new"));
-		assertTrue("Reads correct updated algorithm", clientReadCheck.getEncryptionAlgorithm().equals(EncryptionAlgorithm.AES));
+		assertTrue("Reads correct updated ID", clientReadUpdate.getClientID().getID().equals("test_client"));
+		assertTrue("Reads correct updated key", clientReadUpdate.getPublicKey().equals("my_public_key_new"));
+		assertTrue("Reads correct updated algorithm", clientReadUpdate.getEncryptionAlgorithm().equals(EncryptionAlgorithm.AES));
 		
 		// Test Delete
 		
@@ -131,7 +131,7 @@ public class MessageParserTest {
 		Envelope envelopeDelete = new Envelope(sender, messageDelete);
 		
 		Response<Boolean> responseDelete = (Response<Boolean>) MessageParser.runCommand(controller, envelopeDelete);
-		assertTrue("Client properly registered", responseCreate.getValue());
+		assertTrue("Client properly registered", responseDelete.getValue());
 		assertTrue("Client in ZooKeeper system", controller.exists("/client/active/test_client") == false);
 	}
 	
