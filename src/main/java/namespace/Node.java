@@ -3,6 +3,7 @@ package namespace;
 import database.IControllable;
 import model.config.NodeConfig;
 import model.data.NodeID;
+import model.messages.Response;
 
 /**
  * The Node class performs all operations on the Nodes section of

@@ -16,6 +16,8 @@ import model.messages.ConfigToKeygroupWrapper;
 import model.messages.CryptoToKeygroupWrapper;
 import model.messages.Envelope;
 import model.messages.Message;
+import model.messages.Response;
+import model.messages.ResponseCode;
 
 public class MessageParser {
 	

@@ -12,9 +12,9 @@ import model.config.NodeConfig;
 import model.data.NodeID;
 import model.messages.Envelope;
 import model.messages.Message;
+import model.messages.Response;
 import namespace.MessageParser;
 import namespace.Node;
-import namespace.Response;
 
 public class NamespaceReceiver extends AbstractReceiver {
 	

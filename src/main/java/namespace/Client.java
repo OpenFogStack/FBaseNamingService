@@ -3,6 +3,7 @@ package namespace;
 import database.IControllable;
 import model.config.ClientConfig;
 import model.data.ClientID;
+import model.messages.Response;
 
 /**
  * The Client class performs all operations on the Clients section of

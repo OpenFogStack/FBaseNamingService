@@ -4,6 +4,8 @@ import database.IControllable;
 import model.JSONable;
 import model.config.Config;
 import model.data.ConfigID;
+import model.messages.Response;
+import model.messages.ResponseCode;
 
 /**
  * The SystemEntity class is the parent class for subsystems within the database

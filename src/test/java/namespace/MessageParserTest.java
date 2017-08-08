@@ -26,6 +26,7 @@ import model.data.NodeID;
 import model.messages.Command;
 import model.messages.Envelope;
 import model.messages.Message;
+import model.messages.Response;
 
 public class MessageParserTest {
 	private static IControllable controller;
