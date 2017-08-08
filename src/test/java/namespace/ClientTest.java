@@ -30,6 +30,9 @@ public class ClientTest {
 	private static NodeID sender;
 	private static NamingService ns;
 	
+	private static final String activePath = "/client/active/";
+	private static final String tombstonedPath = "/client/tombstoned/";
+	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 	}
@@ -60,28 +63,56 @@ public class ClientTest {
 	
 	@Test
 	public void createClientTest() throws IllegalArgumentException, InterruptedException {
-		ClientConfig c = new ClientConfig(new ClientID("test_client"), "my_public_key", EncryptionAlgorithm.AES);
+		// Set up client
+		ClientID id = new ClientID("test_client");
+		String key = "my_public_key";
+		EncryptionAlgorithm alg = EncryptionAlgorithm.AES;
+		ClientConfig c = new ClientConfig(id, key, alg);
+		
+		// Run tests
 		createClient(c);
 	}
 	
 	@Test
 	public void readClientTest() throws IllegalArgumentException, InterruptedException {
-		ClientConfig c = new ClientConfig(new ClientID("test_client"), "my_public_key", EncryptionAlgorithm.AES);
+		//Set up client
+		ClientID id = new ClientID("test_client");
+		String key = "my_public_key";
+		EncryptionAlgorithm alg = EncryptionAlgorithm.AES;
+		ClientConfig c = new ClientConfig(id, key, alg);
+		
+		// Run tests
 		createClient(c);
 		readClient(c.getClientID(), c);
 	}
 	
 	@Test
 	public void updateClientTest() throws IllegalArgumentException, InterruptedException {
-		ClientConfig c = new ClientConfig(new ClientID("test_client"), "my_public_key", EncryptionAlgorithm.AES);
+		// Set up original version of client
+		ClientID id = new ClientID("test_client");
+		String key1 = "my_public_key";
+		EncryptionAlgorithm alg1 = EncryptionAlgorithm.AES;
+		ClientConfig c = new ClientConfig(id, key1, alg1);
+		
+		// Change all the client fields except id
+		String key2 = "my_new_public_key";
+		EncryptionAlgorithm alg2 = EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT;
+		ClientConfig u = new ClientConfig(id, key2, alg2);
+		
+		// Run tests
 		createClient(c);
-		ClientConfig u = new ClientConfig(c.getClientID(), "new_public_key", EncryptionAlgorithm.RSA_PUBLIC_ENCRYPT);
 		updateClient(c, u);
 	}
 	
 	@Test
 	public void deleteClientTest() throws IllegalArgumentException, InterruptedException {
-		ClientConfig c = new ClientConfig(new ClientID("test_client"), "my_public_key", EncryptionAlgorithm.AES);
+		// Set up client
+		ClientID id = new ClientID("test_client");
+		String key = "my_public_key";
+		EncryptionAlgorithm alg = EncryptionAlgorithm.AES;
+		ClientConfig c = new ClientConfig(id, key, alg);
+		
+		// Run tests
 		createClient(c);
 		deleteClient(c.getClientID());
 	}
@@ -92,12 +123,12 @@ public class ClientTest {
 		
 		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
 		assertTrue("Proper success response", response.getValue());
-		assertTrue("Client in active", controller.exists("/client/active/" + c.getClientID()));
-		assertFalse("Client not in tombstoned", controller.exists("/client/tombstoned/" + c.getClientID()));
+		assertTrue("Client in active", controller.exists(activePath + c.getClientID()));
+		assertFalse("Client not in tombstoned", controller.exists(tombstonedPath + c.getClientID()));
 	}
 	
 	public void readClient(ClientID id, ClientConfig expected) throws IllegalArgumentException, InterruptedException {
-		assertTrue("Client started in active", controller.exists("/client/active/" + id));
+		assertTrue("Client started in active", controller.exists(activePath + id));
 		
 		Message message = new Message(Command.CLIENT_CONFIG_READ, JSONable.toJSON(id));
 		Envelope envelope = new Envelope(sender, message);
@@ -113,7 +144,7 @@ public class ClientTest {
 	}
 	
 	public void updateClient(ClientConfig original, ClientConfig updated) throws IllegalArgumentException, InterruptedException {
-		assertTrue("Client original started in active", controller.exists("/client/active/" + original.getClientID()));
+		assertTrue("Client original started in active", controller.exists(activePath + original.getClientID()));
 		assertEquals("Client to update has same ID as original", original.getClientID(), updated.getClientID());
 		
 		Message message = new Message(Command.CLIENT_CONFIG_UPDATE, JSONable.toJSON(updated));
@@ -126,14 +157,14 @@ public class ClientTest {
 	}
 	
 	public void deleteClient(ClientID id) throws IllegalArgumentException, InterruptedException {
-		assertTrue("Client started in active", controller.exists("/client/active/" + id));
+		assertTrue("Client started in active", controller.exists(activePath + id));
 		
-		Message messageDelete = new Message(Command.CLIENT_CONFIG_DELETE, JSONable.toJSON(id));
-		Envelope envelopeDelete = new Envelope(sender, messageDelete);
+		Message message = new Message(Command.CLIENT_CONFIG_DELETE, JSONable.toJSON(id));
+		Envelope envelope = new Envelope(sender, message);
 		
-		Response<Boolean> responseDelete = (Response<Boolean>) MessageParser.runCommand(controller, envelopeDelete);
-		assertTrue("Proper success response", responseDelete.getValue());
-		assertFalse("Client deleted from active", controller.exists("/client/active/" + id));
-		assertTrue("Client moved to tombstoned", controller.exists("/client/tombstoned/" + id));
+		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
+		assertTrue("Proper success response", response.getValue());
+		assertFalse("Client deleted from active", controller.exists(activePath + id));
+		assertTrue("Client moved to tombstoned", controller.exists(tombstonedPath + id));
 	}
 }
