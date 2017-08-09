@@ -20,8 +20,6 @@ import model.config.ClientConfig;
 import model.data.ClientID;
 import model.data.NodeID;
 import model.messages.Command;
-import model.messages.Envelope;
-import model.messages.Message;
 import model.messages.Response;
 import model.messages.ResponseCode;
 
@@ -64,11 +62,7 @@ public class ClientTest {
 	
 	@Test
 	public void createClientTest() throws IllegalArgumentException, InterruptedException {
-		// Set up client
-		ClientID id = new ClientID("test_client");
-		String key = "my_public_key";
-		EncryptionAlgorithm alg = EncryptionAlgorithm.AES;
-		ClientConfig c = new ClientConfig(id, key, alg);
+		ClientConfig c = makeStartingClient();
 		
 		// Run tests
 		createClient(c);
@@ -76,11 +70,7 @@ public class ClientTest {
 	
 	@Test
 	public void readClientTest() throws IllegalArgumentException, InterruptedException {
-		//Set up client
-		ClientID id = new ClientID("test_client");
-		String key = "my_public_key";
-		EncryptionAlgorithm alg = EncryptionAlgorithm.AES;
-		ClientConfig c = new ClientConfig(id, key, alg);
+		ClientConfig c = makeStartingClient();
 		
 		// Run tests
 		createClient(c);
@@ -89,16 +79,8 @@ public class ClientTest {
 	
 	@Test
 	public void updateClientTest() throws IllegalArgumentException, InterruptedException {
-		// Set up original version of client
-		ClientID id = new ClientID("test_client");
-		String key1 = "my_public_key";
-		EncryptionAlgorithm alg1 = EncryptionAlgorithm.AES;
-		ClientConfig c = new ClientConfig(id, key1, alg1);
-		
-		// Change all the client fields except id
-		String key2 = "my_new_public_key";
-		EncryptionAlgorithm alg2 = EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT;
-		ClientConfig u = new ClientConfig(id, key2, alg2);
+		ClientConfig c = makeStartingClient();
+		ClientConfig u = makeUpdatedClient(c);
 		
 		// Run tests
 		createClient(c);
@@ -107,37 +89,32 @@ public class ClientTest {
 	
 	@Test
 	public void deleteClientTest() throws IllegalArgumentException, InterruptedException {
-		// Set up client
-		ClientID id = new ClientID("test_client");
-		String key = "my_public_key";
-		EncryptionAlgorithm alg = EncryptionAlgorithm.AES;
-		ClientConfig c = new ClientConfig(id, key, alg);
+		ClientConfig c = makeStartingClient();
 		
 		// Run tests
 		createClient(c);
 		deleteClient(c.getClientID());
 	}
 
-	public void createClient(ClientConfig c) throws IllegalArgumentException, InterruptedException {
-		Message message = new Message(Command.CLIENT_CONFIG_CREATE, JSONable.toJSON(c));
-		Envelope envelope = new Envelope(sender, message);
+	private void createClient(ClientConfig c) throws IllegalArgumentException, InterruptedException {
+		assertFalse("Client not active at start", controller.exists(activePath + c.getClientID()));
+		assertFalse("Client not in tombstoned at start", controller.exists(tombstonedPath + c.getClientID()));
 		
 		@SuppressWarnings("unchecked")
-		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
+		Response<Boolean> response = (Response<Boolean>) TestUtil.run(Command.CLIENT_CONFIG_CREATE, c, sender, controller);
+		
 		assertTrue("Proper success response", response.getValue());
 		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		assertTrue("Client in active", controller.exists(activePath + c.getClientID()));
 		assertFalse("Client not in tombstoned", controller.exists(tombstonedPath + c.getClientID()));
 	}
 	
-	public void readClient(ClientID id, ClientConfig expected) throws IllegalArgumentException, InterruptedException {
+	private void readClient(ClientID id, ClientConfig expected) throws IllegalArgumentException, InterruptedException {
 		assertTrue("Client started in active", controller.exists(activePath + id));
 		
-		Message message = new Message(Command.CLIENT_CONFIG_READ, JSONable.toJSON(id));
-		Envelope envelope = new Envelope(sender, message);
-		
 		@SuppressWarnings("unchecked")
-		Response<String> response = (Response<String>) MessageParser.runCommand(controller, envelope);
+		Response<String> response = (Response<String>) TestUtil.run(Command.CLIENT_CONFIG_READ, id, sender, controller);
+		
 		assertNotNull("Client properly read", response.getMessage());
 		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		
@@ -146,34 +123,48 @@ public class ClientTest {
 		assertEquals("Reads correct ID", expected.getClientID(), r.getClientID());
 		assertEquals("Reads correct key", expected.getPublicKey(), r.getPublicKey());
 		assertEquals("Reads correct algorithm", expected.getEncryptionAlgorithm(), r.getEncryptionAlgorithm());
+		assertEquals("ClientConfigs are equal", expected, r);
 	}
 	
-	public void updateClient(ClientConfig original, ClientConfig updated) throws IllegalArgumentException, InterruptedException {
+	private void updateClient(ClientConfig original, ClientConfig updated) throws IllegalArgumentException, InterruptedException {
 		assertTrue("Client original started in active", controller.exists(activePath + original.getClientID()));
 		assertEquals("Client to update has same ID as original", original.getClientID(), updated.getClientID());
 		
-		Message message = new Message(Command.CLIENT_CONFIG_UPDATE, JSONable.toJSON(updated));
-		Envelope envelope = new Envelope(sender, message);
-		
 		@SuppressWarnings("unchecked")
-		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
+		Response<Boolean> response = (Response<Boolean>) TestUtil.run(Command.CLIENT_CONFIG_UPDATE, updated, sender, controller);
+		
 		assertTrue("Proper success response", response.getValue());
 		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		
 		readClient(original.getClientID(), updated);
 	}
 	
-	public void deleteClient(ClientID id) throws IllegalArgumentException, InterruptedException {
+	private void deleteClient(ClientID id) throws IllegalArgumentException, InterruptedException {
 		assertTrue("Client started in active", controller.exists(activePath + id));
 		
-		Message message = new Message(Command.CLIENT_CONFIG_DELETE, JSONable.toJSON(id));
-		Envelope envelope = new Envelope(sender, message);
-		
 		@SuppressWarnings("unchecked")
-		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
+		Response<Boolean> response = (Response<Boolean>) TestUtil.run(Command.CLIENT_CONFIG_DELETE, id, sender, controller);
+		
 		assertTrue("Proper success response", response.getValue());
 		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		assertFalse("Client deleted from active", controller.exists(activePath + id));
 		assertTrue("Client moved to tombstoned", controller.exists(tombstonedPath + id));
+	}
+	
+	private ClientConfig makeStartingClient() {
+		// Set up original version of client
+		ClientID id = new ClientID("test_client");
+		String key1 = "my_public_key";
+		EncryptionAlgorithm alg1 = EncryptionAlgorithm.AES;
+		
+		return new ClientConfig(id, key1, alg1);
+	}
+	
+	private ClientConfig makeUpdatedClient(ClientConfig c) {
+		// Change all the client fields except id
+		String key2 = "my_new_public_key";
+		EncryptionAlgorithm alg2 = EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT;
+		
+		return new ClientConfig(c.getClientID(), key2, alg2);
 	}
 }
