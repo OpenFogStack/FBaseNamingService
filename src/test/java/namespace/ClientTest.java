@@ -23,6 +23,7 @@ import model.messages.Command;
 import model.messages.Envelope;
 import model.messages.Message;
 import model.messages.Response;
+import model.messages.ResponseCode;
 
 public class ClientTest {
 	
@@ -121,8 +122,10 @@ public class ClientTest {
 		Message message = new Message(Command.CLIENT_CONFIG_CREATE, JSONable.toJSON(c));
 		Envelope envelope = new Envelope(sender, message);
 		
+		@SuppressWarnings("unchecked")
 		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
 		assertTrue("Proper success response", response.getValue());
+		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		assertTrue("Client in active", controller.exists(activePath + c.getClientID()));
 		assertFalse("Client not in tombstoned", controller.exists(tombstonedPath + c.getClientID()));
 	}
@@ -133,8 +136,10 @@ public class ClientTest {
 		Message message = new Message(Command.CLIENT_CONFIG_READ, JSONable.toJSON(id));
 		Envelope envelope = new Envelope(sender, message);
 		
+		@SuppressWarnings("unchecked")
 		Response<String> response = (Response<String>) MessageParser.runCommand(controller, envelope);
 		assertNotNull("Client properly read", response.getMessage());
+		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		
 		ClientConfig r = JSONable.fromJSON(response.getValue(), ClientConfig.class);
 		
@@ -150,8 +155,10 @@ public class ClientTest {
 		Message message = new Message(Command.CLIENT_CONFIG_UPDATE, JSONable.toJSON(updated));
 		Envelope envelope = new Envelope(sender, message);
 		
+		@SuppressWarnings("unchecked")
 		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
 		assertTrue("Proper success response", response.getValue());
+		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		
 		readClient(original.getClientID(), updated);
 	}
@@ -162,8 +169,10 @@ public class ClientTest {
 		Message message = new Message(Command.CLIENT_CONFIG_DELETE, JSONable.toJSON(id));
 		Envelope envelope = new Envelope(sender, message);
 		
+		@SuppressWarnings("unchecked")
 		Response<Boolean> response = (Response<Boolean>) MessageParser.runCommand(controller, envelope);
 		assertTrue("Proper success response", response.getValue());
+		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		assertFalse("Client deleted from active", controller.exists(activePath + id));
 		assertTrue("Client moved to tombstoned", controller.exists(tombstonedPath + id));
 	}
