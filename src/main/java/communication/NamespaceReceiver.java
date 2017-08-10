@@ -17,11 +17,11 @@ import namespace.MessageParser;
 import namespace.Node;
 
 public class NamespaceReceiver extends AbstractReceiver {
-	
+
 	private NamingService ns;
 
 	private static Logger logger = Logger.getLogger(NamespaceReceiver.class.getName());
-	
+
 	public NamespaceReceiver(NamingService ns, String address, int port) {
 		super(address, port, ZMQ.REP);
 		this.ns = ns;
@@ -31,15 +31,17 @@ public class NamespaceReceiver extends AbstractReceiver {
 	protected void interpreteReceivedEnvelope(Envelope envelope, Socket responseSocket) {
 		logger.debug("Interpreting message.");
 		// Decrypt with own private key
-		envelope.getMessage().decryptFields(ns.configuration.getPrivateKey(), EncryptionAlgorithm.RSA_PUBLIC_ENCRYPT);
-		
+		envelope.getMessage().decryptFields(ns.configuration.getPrivateKey(),
+				EncryptionAlgorithm.RSA_PUBLIC_ENCRYPT);
+
 		// Decrypt with sending node's public key
 		// XXX Add error checking
 		NodeID senderID = (NodeID) envelope.getConfigID();
 		Response<String> r = Node.getInstance().getNodeInfo(ns.controller, senderID);
 		NodeConfig sender = JSONable.fromJSON(r.getValue(), NodeConfig.class);
-		envelope.getMessage().decryptFields(sender.getPublicKey(), EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT);
-		
+		envelope.getMessage().decryptFields(sender.getPublicKey(),
+				EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT);
+
 		// XXX Add response to message
 		Response<?> response = MessageParser.runCommand(ns.controller, envelope);
 		Message m = new Message();

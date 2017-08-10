@@ -6,29 +6,28 @@ import model.data.NodeID;
 import model.messages.Response;
 
 /**
- * The Node class performs all operations on the Nodes section of
- * the system. This is primarily designed to keep track of information
- * about all fog nodes similar to a phone book so their details
- * are available.
+ * The Node class performs all operations on the Nodes section of the system. This is
+ * primarily designed to keep track of information about all fog nodes similar to a phone book
+ * so their details are available.
  * 
  * @author Wm. Keith van der Meulen
  */
 public class Node extends SystemEntity {
-	
+
 	private static Node instance;
-	
+
 	public static Node getInstance() {
-		if(instance == null) {
+		if (instance == null) {
 			instance = new Node();
 		}
-		
+
 		return instance;
 	}
-	
+
 	private Node() {
 		super("node");
 	}
-	
+
 	/**
 	 * Registers a node with the FBase system
 	 * 
@@ -39,7 +38,7 @@ public class Node extends SystemEntity {
 	Response<Boolean> registerNode(IControllable controller, NodeConfig entity) {
 		return registerEntity(controller, entity.getNodeID(), entity);
 	}
-	
+
 	/**
 	 * Responds with all information about the node
 	 * 
@@ -50,7 +49,7 @@ public class Node extends SystemEntity {
 	public Response<String> getNodeInfo(IControllable controller, NodeID nodeID) {
 		return getEntityInfo(controller, nodeID);
 	}
-	
+
 	/**
 	 * Updates information kept on the node with the matching node ID
 	 * 
@@ -61,10 +60,10 @@ public class Node extends SystemEntity {
 	Response<Boolean> updateNodeInfo(IControllable controller, NodeConfig entity) {
 		return updateEntityInfo(controller, entity.getNodeID(), entity);
 	}
-	
+
 	/**
-	 * Permanently tombstones a node in the system. Tombstoned nodes wishing to
-	 * enter the system again must register as a new node with a new ID
+	 * Permanently tombstones a node in the system. Tombstoned nodes wishing to enter the
+	 * system again must register as a new node with a new ID
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
 	 * @param nodeID Node to tombstone
