@@ -6,7 +6,6 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<name>FBase Naming Service</name>
 	<description>Namespace management system for FBase</description>
-
 	<build>
 		<plugins>
 			<plugin>
@@ -20,14 +19,12 @@
 			</plugin>
 		</plugins>
 	</build>
-
 	<dependencies>
 		<dependency>
 			<groupId>de.hasenburg</groupId>
 			<artifactId>fbasecommons</artifactId>
 			<version>0.0.4</version>
 		</dependency>
-
 		<!-- https://mvnrepository.com/artifact/org.apache.zookeeper/zookeeper -->
 		<dependency>
 			<groupId>org.apache.zookeeper</groupId>
