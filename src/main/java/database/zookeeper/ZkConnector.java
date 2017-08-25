@@ -1,4 +1,4 @@
-package namespace;
+package database.zookeeper;
 
 import java.io.IOException;
 
