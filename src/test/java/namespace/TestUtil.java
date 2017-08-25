@@ -11,7 +11,7 @@ import model.messages.Message;
 import model.messages.Response;
 
 public class TestUtil {
-	static void deleteDir(File file) {
+	public static void deleteDir(File file) {
 	    File[] contents = file.listFiles();
 	    if (contents != null) {
 	        for (File f : contents) {
@@ -21,8 +21,8 @@ public class TestUtil {
 	    file.delete();
 	}
 	
-	static Response<?> run(Command command, JSONable j, NodeID senderNode, IControllable controller) {
-		Message message = new Message(command, JSONable.toJSON(j));
+	public static Response<?> run(Command command, JSONable payload, NodeID senderNode, IControllable controller) {
+		Message message = new Message(command, JSONable.toJSON(payload));
 		Envelope envelope = new Envelope(senderNode, message);
 		
 		return MessageParser.runCommand(controller, envelope);

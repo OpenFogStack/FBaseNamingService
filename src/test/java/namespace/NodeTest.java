@@ -43,7 +43,7 @@ public class NodeTest {
 	@Before
 	public void setUp() throws Exception {
 		Configuration configuration = new Configuration();
-		controller = new LocalFileController(new File(configuration.getRoot()));
+		controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		ns = new NamingService(controller, configuration);
 	}
 
@@ -114,7 +114,7 @@ public class NodeTest {
 		deleteNodeDifferentSender(n.getID());
 	}
 	
-	private void createNode(NodeConfig c) throws IllegalArgumentException, InterruptedException {
+	void createNode(NodeConfig c) throws IllegalArgumentException, InterruptedException {
 		assertFalse("Node not active at start", controller.exists(activePath + c.getNodeID()));
 		assertFalse("Node not in tombstoned at start", controller.exists(tombstonedPath + c.getNodeID()));
 		
@@ -127,7 +127,7 @@ public class NodeTest {
 		assertFalse("Node not in tombstoned", controller.exists(tombstonedPath + c.getNodeID()));
 	}
 	
-	private void readNode(NodeID id, NodeConfig expected) throws IllegalArgumentException, InterruptedException {
+	void readNode(NodeID id, NodeConfig expected) throws IllegalArgumentException, InterruptedException {
 		assertTrue("Node started in active", controller.exists(activePath + id));
 		
 		@SuppressWarnings("unchecked")
@@ -150,7 +150,7 @@ public class NodeTest {
 		assertEquals("NodeConfigs are equal", expected, r);
 	}
 	
-	private void updateNode(NodeConfig original, NodeConfig updated) throws IllegalArgumentException, InterruptedException {
+	void updateNode(NodeConfig original, NodeConfig updated) throws IllegalArgumentException, InterruptedException {
 		assertTrue("Node original started in active", controller.exists(activePath + original.getNodeID()));
 		assertEquals("Node to update has same ID as original", original.getNodeID(), updated.getNodeID());
 
@@ -163,7 +163,7 @@ public class NodeTest {
 		readNode(original.getNodeID(), updated);
 	}
 	
-	private void deleteNode(NodeID id) throws IllegalArgumentException, InterruptedException {
+	void deleteNode(NodeID id) throws IllegalArgumentException, InterruptedException {
 		assertTrue("Node started in active", controller.exists(activePath + id));
 		
 		@SuppressWarnings("unchecked")
@@ -219,7 +219,7 @@ public class NodeTest {
 	private NodeConfig makeUpdatedNode(NodeConfig n) {
 		// Change all the node fields except id
 		String key2 = "my_new_public_key";
-		EncryptionAlgorithm alg2 = EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT;
+		EncryptionAlgorithm alg2 = EncryptionAlgorithm.RSA;
 		List<String> machines2 = new ArrayList<String>();
 		machines2.add("m4");
 		machines2.add("m5");

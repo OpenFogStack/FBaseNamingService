@@ -43,7 +43,7 @@ public class ClientTest {
 	@Before
 	public void setUp() throws Exception {
 		Configuration configuration = new Configuration();
-		controller = new LocalFileController(new File(configuration.getRoot()));
+		controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		sender = new NodeID("sender");
 		ns = new NamingService(controller, configuration);
 	}
@@ -163,7 +163,7 @@ public class ClientTest {
 	private ClientConfig makeUpdatedClient(ClientConfig c) {
 		// Change all the client fields except id
 		String key2 = "my_new_public_key";
-		EncryptionAlgorithm alg2 = EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT;
+		EncryptionAlgorithm alg2 = EncryptionAlgorithm.RSA;
 		
 		return new ClientConfig(c.getClientID(), key2, alg2);
 	}
