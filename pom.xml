@@ -23,7 +23,7 @@
 		<dependency>
 			<groupId>de.hasenburg</groupId>
 			<artifactId>fbasecommons</artifactId>
-			<version>0.0.4</version>
+			<version>0.0.5</version>
 		</dependency>
 		<!-- https://mvnrepository.com/artifact/org.apache.zookeeper/zookeeper -->
 		<dependency>

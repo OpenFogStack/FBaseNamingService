@@ -12,10 +12,11 @@ import database.IControllable;
 
 public class LocalFileController implements IControllable {
 	private File rootDir;
-	private String dataFileName = "\\data.txt";
+	private String dataFileName;
 	
-	public LocalFileController(File rootDir) {
+	public LocalFileController(File rootDir, String folderSeparator) {
 		this.rootDir = rootDir;
+		dataFileName = folderSeparator + "data.txt";
 	}
 	
 	@Override

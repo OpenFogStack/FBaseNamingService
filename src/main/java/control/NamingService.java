@@ -15,6 +15,7 @@ public class NamingService {
 		this.controller = controller;
 		this.configuration = configuration;
 		NamespaceReceiver receiver = new NamespaceReceiver(this, configuration.getAddress(), configuration.getPort());
+		receiver.startReceiving();
 		
 		try {
 			initialize();

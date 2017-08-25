@@ -118,7 +118,7 @@ public class Keygroup extends SystemEntity {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
 				// Get current data from key group
-				String data = controller.readNode(keygroupID.toString());
+				String data = controller.readNode(pathPrefixActive + keygroupID.toString());
 				
 				// Parse to object, add nodeID to list, parse back to byte[]
 				KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
@@ -162,6 +162,31 @@ public class Keygroup extends SystemEntity {
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+		}
+	}
+	
+	/**
+	 * Responds with all information about the Keygroup.
+	 * 
+	 * @param controller Controller for interfacing with base distributed system
+	 * @param keygroupID The ID to the Keygroup to get information from
+	 * @return Response object with String containing the Keygroup information
+	 */
+	Response<String> getKeygroupInfo(IControllable controller, KeygroupID keygroupID) {
+		try {
+			String data = null;
+			if(isActive(controller, keygroupID.toString())) {
+				data = controller.readNode(activePath(keygroupID.toString())).toString();
+			} else if (isTombstoned(controller, keygroupID.toString())) {
+				data = controller.readNode(tombstonedPath(keygroupID.toString())).toString();
+			} else {
+				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
+			}
+			
+			return new Response<String>(data, ResponseCode.SUCCESS);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
 	

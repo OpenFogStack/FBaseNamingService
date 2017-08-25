@@ -123,7 +123,42 @@ public class TestInterface {
 			}
 		} while (error);
 		
-		controller = new LocalFileController(f);
+		System.out.println("Local System Types:\n"
+				+ "1) Unix\n"
+				+ "2) Windows");
+		
+		System.out.print("\nType the number of your local system type: ");
+		error = false;
+		String folderSeparator = null;
+		do {
+			error = false;
+			
+			try {
+				int input = Integer.parseInt(scanner.nextLine());
+				
+				switch(input) {
+					case 1:
+						folderSeparator = "/";
+						break;
+					case 2:
+						folderSeparator = "\\";
+						break;
+					default:
+						error = true;
+				}
+				
+			} catch (NumberFormatException e) {
+				error = true;
+			}
+			
+			if(error == true) {
+				System.out.print("\nNumber not recognized. Please enter the number of your local system type: ");
+			}
+			
+			System.out.print("\n");
+		} while (error);
+		
+		controller = new LocalFileController(f, folderSeparator);
 	}
 	
 	private static void useZooKeeper() {

@@ -19,6 +19,8 @@ public class Configuration {
 	
 	// System
 	private String system;
+	private String localOS;
+	private String folderSeparator;
 	private String root;
 	
 	public Configuration() {
@@ -43,7 +45,22 @@ public class Configuration {
 			
 			// System
 			system = properties.getProperty("system");
+			localOS = properties.getProperty("localOS", "unix").toLowerCase();
 			root = properties.getProperty("root", "");
+			
+			// Set
+			switch(localOS) {
+			case "unix":
+				folderSeparator = "/";
+				break;
+			case "windows":
+				folderSeparator = "\\";
+				break;
+			default:
+				folderSeparator = "/";
+				break;
+			}
+				
 			
 			// TODO Check all fields are properly set
 		} catch (IOException | NumberFormatException e) {
@@ -74,6 +91,14 @@ public class Configuration {
 	
 	public String getSystem() {
 		return system;
+	}
+	
+	public String getLocalOS() {
+		return localOS;
+	}
+	
+	public String getFolderSeparator() {
+		return folderSeparator;
 	}
 	
 	public String getRoot() {

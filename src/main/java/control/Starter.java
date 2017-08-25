@@ -9,7 +9,7 @@ public class Starter {
 	
 	public static void main(String[] args) {
 		Configuration configuration = new Configuration();
-		IControllable controller = new LocalFileController(new File(configuration.getRoot()));
+		IControllable controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		new NamingService(controller, configuration);
 	}
 	

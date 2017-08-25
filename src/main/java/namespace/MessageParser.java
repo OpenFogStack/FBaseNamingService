@@ -1,5 +1,7 @@
 package namespace;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import crypto.CryptoProvider.EncryptionAlgorithm;
 import database.IControllable;
 import model.JSONable;
@@ -63,37 +65,37 @@ public class MessageParser {
 		}
 	}
 	
-	private static Response<?> clientCreate(IControllable controller, String content) {
+	private static Response<Boolean> clientCreate(IControllable controller, String content) {
 		ClientConfig client = JSONable.fromJSON(content, ClientConfig.class);
 		return Client.getInstance().registerClient(controller, client);
 	}
 	
-	private static Response<?> clientRead(IControllable controller, String content) {
+	private static Response<String> clientRead(IControllable controller, String content) {
 		ClientID clientID = JSONable.fromJSON(content, ClientID.class);
 		return Client.getInstance().getClientInfo(controller, clientID);
 	}
 	
-	private static Response<?> clientUpdate(IControllable controller, String content) {
+	private static Response<Boolean> clientUpdate(IControllable controller, String content) {
 		ClientConfig client = JSONable.fromJSON(content, ClientConfig.class);
 		return Client.getInstance().updateClientInfo(controller, client);
 	}
 	
-	private static Response<?> clientDelete(IControllable controller, String content) {
+	private static Response<Boolean> clientDelete(IControllable controller, String content) {
 		ClientID clientID = JSONable.fromJSON(content, ClientID.class);
 		return Client.getInstance().removeClient(controller, clientID);
 	}
 	
-	private static Response<?> nodeCreate(IControllable controller, String content) {
+	private static Response<Boolean> nodeCreate(IControllable controller, String content) {
 		NodeConfig node = JSONable.fromJSON(content, NodeConfig.class);
 		return Node.getInstance().registerNode(controller, node);
 	}
 	
-	private static Response<?> nodeRead(IControllable controller, String content) {
+	private static Response<String> nodeRead(IControllable controller, String content) {
 		NodeID nodeID = JSONable.fromJSON(content, NodeID.class);
 		return Node.getInstance().getNodeInfo(controller, nodeID);
 	}
 	
-	private static Response<?> nodeUpdate(IControllable controller, String content, NodeID senderID) {
+	private static Response<Boolean> nodeUpdate(IControllable controller, String content, NodeID senderID) {
 		NodeConfig node = JSONable.fromJSON(content, NodeConfig.class);
 		if(senderID.equals(node.getNodeID())) {
 			return Node.getInstance().updateNodeInfo(controller, node);
@@ -102,7 +104,7 @@ public class MessageParser {
 		}
 	}
 	
-	private static Response<?> nodeDelete(IControllable controller, String content, NodeID senderID) {
+	private static Response<Boolean> nodeDelete(IControllable controller, String content, NodeID senderID) {
 		NodeID nodeID = JSONable.fromJSON(content, NodeID.class);
 		if(senderID.equals(nodeID)) {
 			return Node.getInstance().removeNode(controller, nodeID);
@@ -111,14 +113,14 @@ public class MessageParser {
 		}
 	}
 	
-	private static Response<?> keygroupCreate(IControllable controller, String content) {
+	private static Response<Boolean> keygroupCreate(IControllable controller, String content) {
 		KeygroupConfig keygroup = JSONable.fromJSON(content, KeygroupConfig.class);
 		return Keygroup.getInstance().createKeygroup(controller, keygroup);
 	}
 	
-	private static Response<?> keygroupAddReplicaNode(IControllable controller, String content, NodeID senderID) {
+	private static Response<Boolean> keygroupAddReplicaNode(IControllable controller, String content, NodeID senderID) {
 		// Get KeygroupID and node from JSON via wrapper
-		ConfigToKeygroupWrapper wrapper = JSONable.fromJSON(content, ConfigToKeygroupWrapper.class);
+		ConfigToKeygroupWrapper<ReplicaNodeConfig> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigToKeygroupWrapper<ReplicaNodeConfig>>() {});
 		KeygroupID keygroupID = wrapper.getKeygroupID();
 		ReplicaNodeConfig replicaNode = (ReplicaNodeConfig) wrapper.getConfig();
 		
@@ -133,9 +135,9 @@ public class MessageParser {
 		}
 	}
 	
-	private static Response<?> keygroupAddTriggerNode(IControllable controller, String content, NodeID senderID) {
+	private static Response<Boolean> keygroupAddTriggerNode(IControllable controller, String content, NodeID senderID) {
 		// Get KeygroupID and node from JSON via wrapper
-		ConfigToKeygroupWrapper wrapper = JSONable.fromJSON(content, ConfigToKeygroupWrapper.class);
+		ConfigToKeygroupWrapper<TriggerNodeConfig> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigToKeygroupWrapper<TriggerNodeConfig>>() {});
 		KeygroupID keygroupID = wrapper.getKeygroupID();
 		TriggerNodeConfig triggerNode = (TriggerNodeConfig) wrapper.getConfig();
 		
@@ -150,16 +152,32 @@ public class MessageParser {
 		}
 	}
 	
-	private static Response<?> keygroupRead(IControllable controller, String content, NodeID senderID) {
-		KeygroupConfig keygroup = JSONable.fromJSON(content, KeygroupConfig.class);
-		if(keygroup.containsReplicaNode(senderID) || keygroup.containsTriggerNode(senderID)) {
-			return Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroup.getKeygroupID());
+	private static Response<String> keygroupRead(IControllable controller, String content, NodeID senderID) {
+		KeygroupID id = JSONable.fromJSON(content, KeygroupID.class);
+		Response<String> r = Keygroup.getInstance().getKeygroupInfo(controller, id);
+		
+		if(r.getResponseCode().equals(ResponseCode.SUCCESS)) {
+			KeygroupConfig keygroup = JSONable.fromJSON(r.getValue(), KeygroupConfig.class);
+			
+			if(keygroup.containsReplicaNode(senderID) || keygroup.containsTriggerNode(senderID)) {
+				return r;
+			} else {
+				// Remove encryption algorithm and secret
+				keygroup.setEncryptionAlgorithm(null);
+				keygroup.setEncryptionSecret(null);
+				
+				String data = JSONable.toJSON(keygroup);
+				
+				return new Response<String>(data, ResponseCode.SUCCESS);
+			}
+		} else if (r.getValue() == null){
+			return r;
 		} else {
-			return Keygroup.getInstance().getKeygroupInfoUnauthorized(controller, keygroup.getKeygroupID());
+			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
 	
-	private static Response<?> keygroupUpdateCrypto(IControllable controller, String content, NodeID senderID) {
+	private static Response<Boolean> keygroupUpdateCrypto(IControllable controller, String content, NodeID senderID) {
 		// Get KeygroupID and node from JSON via wrapper
 		CryptoToKeygroupWrapper wrapper = JSONable.fromJSON(content, CryptoToKeygroupWrapper.class);
 		KeygroupID keygroupID = wrapper.getKeygroupID();
@@ -177,7 +195,7 @@ public class MessageParser {
 		}
 	}
 	
-	private static Response<?> keygroupDelete(IControllable controller, String content, NodeID senderID) {
+	private static Response<Boolean> keygroupDelete(IControllable controller, String content, NodeID senderID) {
 		KeygroupID keygroupID = JSONable.fromJSON(content, KeygroupID.class);
 		
 		// Get keygroup specified from the KeygroupID
