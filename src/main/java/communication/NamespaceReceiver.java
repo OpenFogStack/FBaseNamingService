@@ -7,6 +7,7 @@ import org.zeromq.ZMQ.Socket;
 import communication.AbstractReceiver;
 import control.NamingService;
 import crypto.CryptoProvider.EncryptionAlgorithm;
+import exceptions.FBaseEncryptionException;
 import model.JSONable;
 import model.config.NodeConfig;
 import model.data.NodeID;
@@ -29,22 +30,30 @@ public class NamespaceReceiver extends AbstractReceiver {
 
 	@Override
 	protected void interpreteReceivedEnvelope(Envelope envelope, Socket responseSocket) {
-		logger.debug("Interpreting message.");
-		// Decrypt with own private key
-		envelope.getMessage().decryptFields(ns.configuration.getPrivateKey(), EncryptionAlgorithm.RSA_PUBLIC_ENCRYPT);
-		
-		// Decrypt with sending node's public key
-		// XXX Add error checking
-		NodeID senderID = (NodeID) envelope.getConfigID();
-		Response<String> r = Node.getInstance().getNodeInfo(ns.controller, senderID);
-		NodeConfig sender = JSONable.fromJSON(r.getValue(), NodeConfig.class);
-		envelope.getMessage().decryptFields(sender.getPublicKey(), EncryptionAlgorithm.RSA_PRIVATE_ENCRYPT);
-		
-		// XXX Add response to message
-		Response<?> response = MessageParser.runCommand(ns.controller, envelope);
-		Message m = new Message();
-		m.encryptFields(sender.getPublicKey(), EncryptionAlgorithm.RSA_PUBLIC_ENCRYPT);
-		responseSocket.send(JSONable.toJSON(m));
+		try {
+			logger.debug("Interpreting message.");
+			// Decrypt with own private key
+			envelope.getMessage().decryptFields(ns.configuration.getPrivateKey(), EncryptionAlgorithm.RSA);
+			
+			// Verify authenticity
+			NodeID senderID = (NodeID) envelope.getConfigID();
+			Response<String> r = Node.getInstance().getNodeInfo(ns.controller, senderID);
+			NodeConfig sender = JSONable.fromJSON(r.getValue(), NodeConfig.class);
+			boolean authenticated = envelope.getMessage().verifyMessage(sender.getPublicKey(), EncryptionAlgorithm.RSA);
+			
+			if(authenticated) {
+				Response<?> response = MessageParser.runCommand(ns.controller, envelope);
+				Message m = new Message(null, response.getValue().toString());
+				m.setTextualInfo(response.getResponseCode().toString());
+				m.encryptFields(sender.getPublicKey(), EncryptionAlgorithm.RSA);
+				responseSocket.send(JSONable.toJSON(m));
+			} else {
+				// TODO add unauthenticated stuff
+			}
+		} catch (FBaseEncryptionException e) {
+			logger.error("Decryption failed");
+			e.printStackTrace();
+		}
 	}
 
 }

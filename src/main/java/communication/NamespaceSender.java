@@ -4,10 +4,14 @@ import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 
 import communication.AbstractSender;
+import control.NamingService;
 import crypto.CryptoProvider;
 import crypto.CryptoProvider.EncryptionAlgorithm;
+import exceptions.FBaseEncryptionException;
 import model.JSONable;
 import model.messages.Envelope;
+import model.messages.Message;
+import namespace.MessageParser;
 
 /**
  * Sends requests to designated receivers.
@@ -16,14 +20,19 @@ import model.messages.Envelope;
  *
  */
 public class NamespaceSender extends AbstractSender {
-
+	
+	private NamingService ns;
+	private String nodePublicKey;
+	private String nodePrivateKey;
+	
 	private static Logger logger = Logger.getLogger(NamespaceSender.class.getName());
 
 	/**
 	 * Initializes the NamespaceSender, it then can be used without further modifications.
 	 */
-	public NamespaceSender(String address, int port, String secret, EncryptionAlgorithm algorithm) {
+	public NamespaceSender(NamingService ns, String address, int port, String secret, EncryptionAlgorithm algorithm) {
 		super(address, port, ZMQ.REQ);
+		this.ns = ns;
 	}
 
 	/**
@@ -34,11 +43,33 @@ public class NamespaceSender extends AbstractSender {
 	 */
 	@Override
 	public String send(Envelope envelope, String secret, EncryptionAlgorithm algorithm) {
-		logger.debug("Sending envelope with keygroup " + envelope.getKeygroupID());
-		sender.sendMore(envelope.getKeygroupID().getID());
-		sender.send(
-				CryptoProvider.encrypt(JSONable.toJSON(envelope.getMessage()), secret, algorithm));
-		return CryptoProvider.decrypt(sender.recvStr(), secret, algorithm);
+		try {
+			logger.debug("Sending envelope with keygroup " + envelope.getNodeID());
+			
+			envelope.getMessage().signMessage(nodePrivateKey, EncryptionAlgorithm.RSA);
+			envelope.getMessage().encryptFields(ns.configuration.getPublicKey(), EncryptionAlgorithm.RSA);
+			
+			sender.sendMore(envelope.getNodeID().getID());
+			sender.send(JSONable.toJSON(envelope.getMessage()));
+			
+			logger.debug("Waiting for reply");
+			
+			Message m = JSONable.fromJSON(sender.recvStr(), Message.class);
+			m.decryptFields(nodePrivateKey, EncryptionAlgorithm.RSA);
+			
+			return m.getContent();
+		} catch (FBaseEncryptionException e) {
+			logger.error("Error signing message");
+			e.printStackTrace();
+			return null;
+		}
 	}
 
+	public void setPublicKey(String publicKey) {
+		this.nodePublicKey = publicKey;
+	}
+	
+	public void setPrivateKey(String privateKey) {
+		this.nodePrivateKey = privateKey;
+	}
 }
