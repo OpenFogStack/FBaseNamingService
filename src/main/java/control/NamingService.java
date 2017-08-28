@@ -10,11 +10,12 @@ public class NamingService {
 	
 	public IControllable controller;
 	public Configuration configuration;
+	public NamespaceReceiver receiver;
 	
 	public NamingService(IControllable controller, Configuration configuration) {
 		this.controller = controller;
 		this.configuration = configuration;
-		NamespaceReceiver receiver = new NamespaceReceiver(this, configuration.getAddress(), configuration.getPort());
+		receiver = new NamespaceReceiver(this, configuration.getAddress(), configuration.getPort());
 		receiver.startReceiving();
 		
 		try {
@@ -22,6 +23,10 @@ public class NamingService {
 		} catch (IllegalArgumentException | InterruptedException e) {
 			e.printStackTrace();
 		}
+	}
+	
+	public void tearDown() {
+		receiver.stopReception();
 	}
 	
 	private void initialize() throws IllegalArgumentException, InterruptedException {

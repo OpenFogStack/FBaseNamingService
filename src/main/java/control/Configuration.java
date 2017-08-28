@@ -23,6 +23,9 @@ public class Configuration {
 	private String folderSeparator;
 	private String root;
 	
+	// Initialization
+	private String initNodeFile;
+	
 	public Configuration() {
 		this(defaultFileName);
 	}
@@ -45,8 +48,11 @@ public class Configuration {
 			
 			// System
 			system = properties.getProperty("system");
-			localOS = properties.getProperty("localOS", "unix").toLowerCase();
-			root = properties.getProperty("root", "");
+			localOS = properties.getProperty("localOS").toLowerCase();
+			root = properties.getProperty("root");
+			
+			// Initialization
+			initNodeFile = properties.getProperty("initNodeFile");
 			
 			// Set
 			switch(localOS) {
@@ -59,8 +65,7 @@ public class Configuration {
 			default:
 				folderSeparator = "/";
 				break;
-			}
-				
+			}	
 			
 			// TODO Check all fields are properly set
 		} catch (IOException | NumberFormatException e) {
@@ -103,5 +108,9 @@ public class Configuration {
 	
 	public String getRoot() {
 		return root;
+	}
+	
+	public String getInitNodeFile() {
+		return initNodeFile;
 	}
 }
