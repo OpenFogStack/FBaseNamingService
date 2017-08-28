@@ -88,6 +88,8 @@ public class CommunicationTests {
 		// Wait required so that all files are fully created before deleting
 		java.util.concurrent.TimeUnit.SECONDS.sleep(5);
 		
+		ns.tearDown();
+		
 		Configuration configuration = new Configuration();
 		File root = new File(configuration.getRoot());
 		TestUtil.deleteDir(new File(root, "client"));
@@ -106,8 +108,10 @@ public class CommunicationTests {
 		sender.setPrivateKey(privateKey);
 		
 		String response = sender.send(e, null, null);
-		System.out.println(response);
-		assertEquals("It works!", "Yay!", response);
+		@SuppressWarnings("unchecked")
+		Response<String> read = (Response<String>) TestUtil.run(Command.NODE_CONFIG_READ, thisNode.getID(), thisNode.getID(), controller);
+		
+		assertEquals("Proper message received", read.getValue(), response);
 	}
 	
 	@Test
@@ -135,8 +139,6 @@ public class CommunicationTests {
 		sender.setPrivateKey(privateKey);
 		
 		String response = sender.send(e, null, null);
-		System.out.println("Reponse is:");
-		System.out.println(response);
 		assertEquals("It works!", "Yay!", response);
 	}
 

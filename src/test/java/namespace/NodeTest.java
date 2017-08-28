@@ -52,6 +52,8 @@ public class NodeTest {
 		// Wait required so that all files are fully created before deleting
 		java.util.concurrent.TimeUnit.SECONDS.sleep(5);
 		
+		ns.tearDown();
+		
 		Configuration configuration = new Configuration();
 		File root = new File(configuration.getRoot());
 		TestUtil.deleteDir(new File(root, "client"));
