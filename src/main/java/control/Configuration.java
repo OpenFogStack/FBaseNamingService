@@ -1,5 +1,6 @@
 package control;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -36,6 +37,10 @@ public class Configuration {
 		InputStream is = Configuration.class.getClassLoader().getResourceAsStream(configName);
 		
 		try {
+			if (is == null) {
+				is = new FileInputStream(defaultFileName);
+			}
+			
 			properties.load(is);
 			
 			// General
