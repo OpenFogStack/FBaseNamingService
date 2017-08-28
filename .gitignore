@@ -80,3 +80,4 @@ local.properties
 
 # Extra folders
 dataFolder/*
+initialNodeConfig.json
