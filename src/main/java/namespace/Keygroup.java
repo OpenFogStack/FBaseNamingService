@@ -11,6 +11,7 @@ import model.config.KeygroupConfig;
 import model.config.KeygroupMember;
 import model.config.ReplicaNodeConfig;
 import model.config.TriggerNodeConfig;
+import model.data.ClientID;
 import model.data.KeygroupID;
 import model.data.NodeID;
 import model.messages.Response;
@@ -80,6 +81,39 @@ public class Keygroup extends SystemEntity {
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
 	}
+
+	/**
+	 * Adds a client to an existing Keygroup
+	 * 
+	 * @param controller Controller for interfacing with base distributed system
+	 * @param clientID The ID of the client to add
+	 * @param keygroupID The ID of the Keygroup the client should be added to
+	 * @return
+	 */
+	Response<Boolean> addClientToKeygroup(IControllable controller, ClientID clientID, KeygroupID keygroupID) {
+		try {
+			if(isActive(controller, keygroupID.toString())) {
+				// Get current data from key group
+				String data = controller.readNode(pathPrefixActive + keygroupID.toString());
+				
+				// Parse to object, add clientID to list, parse back to string
+				KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
+				keygroup.addClient(clientID);
+				data = JSONable.toJSON(keygroup);
+				
+				// Update key group
+				controller.updateNode(activePath(keygroupID.toString()), data);
+				return new Response<Boolean>(true, ResponseCode.SUCCESS);
+			} else if (isTombstoned(controller, keygroupID.toString())) {
+				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
+			} else {
+				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
+			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+		}
+	}
 	
 	/**
 	 * Adds a replica node to an existing Keygroup
@@ -133,6 +167,39 @@ public class Keygroup extends SystemEntity {
 			} else {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+		}
+	}
+	
+	/**
+	 * Removes a client from an existing Keygroup
+	 * 
+	 * @param controller Controller for interfacing with base distributed system
+	 * @param clientID The ID of the client to remove from the Keygroup
+	 * @param keygroupID The ID of the Keygroup to delete the client from
+	 * @return
+	 */
+	Response<Boolean> removeClientFromKeygroup(IControllable controller, ClientID clientID, KeygroupID keygroupID) {
+		try {
+			String data = controller.readNode(activePath(keygroupID.toString()));
+			
+			// Parse to object
+			KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
+			
+			// Remove client
+			if(keygroup.containsClient(clientID)) {
+				keygroup.removeClient(clientID);
+			} else {
+				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
+			}
+			
+			data = JSONable.toJSON(keygroup);
+			
+			// Update the logical node
+			controller.updateNode(activePath(keygroupID.toString()), data);
+			return new Response<Boolean>(true, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
@@ -325,7 +392,7 @@ public class Keygroup extends SystemEntity {
 		
 		data = JSONable.toJSON(keygroup);
 		
-		// Update the ZkNode
+		// Update the logical node
 		controller.updateNode(activePath(keygroupID.toString()), data);
 		return new Response<Boolean>(true, ResponseCode.SUCCESS);
 	}
@@ -367,7 +434,7 @@ public class Keygroup extends SystemEntity {
 		
 		data = JSONable.toJSON(keygroup);
 		
-		// Update the ZkNode
+		// Update the logical node
 		controller.updateNode(tombstonedPath(keygroupID.toString()), data);
 		return new Response<Boolean>(true, ResponseCode.SUCCESS);
 	}
@@ -382,7 +449,7 @@ public class Keygroup extends SystemEntity {
 	 * @throws InterruptedException
 	 */
 	private Response<Boolean> destroyKeygroup(IControllable controller, KeygroupID keygroupID) throws KeeperException, InterruptedException {
-		// Remove Keygroup ZkNode
+		// Remove Keygroup logical node
 		controller.deleteNode(tombstonedPath(keygroupID.toString()));
 		
 		// Remove higher level nodes if necessary

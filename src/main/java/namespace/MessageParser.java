@@ -14,6 +14,7 @@ import model.data.ClientID;
 import model.data.KeygroupID;
 import model.data.NodeID;
 import model.messages.Command;
+import model.messages.ConfigIDToKeygroupWrapper;
 import model.messages.ConfigToKeygroupWrapper;
 import model.messages.CryptoToKeygroupWrapper;
 import model.messages.Envelope;
@@ -48,6 +49,8 @@ public class MessageParser {
 				return nodeDelete(controller, content, senderID);
 			case KEYGROUP_CONFIG_CREATE:
 				return keygroupCreate(controller, content);
+			case KEYGROUP_CONFIG_ADD_CLIENT:
+				return keygroupAddClientNode(controller, content, senderID);
 			case KEYGROUP_CONFIG_ADD_REPLICA_NODE:
 				return keygroupAddReplicaNode(controller, content, senderID);
 			case KEYGROUP_CONFIG_ADD_TRIGGER_NODE:
@@ -58,8 +61,10 @@ public class MessageParser {
 				return keygroupUpdateCrypto(controller, content, senderID);
 			case KEYGROUP_CONFIG_DELETE:
 				return keygroupDelete(controller, content, senderID);
+			case KEYGROUP_CONFIG_DELETE_CLIENT:
+				return keygroupDeleteClient(controller, content, senderID);
 			case KEYGROUP_CONFIG_DELETE_NODE:
-				// TODO 
+				return keygroupDeleteNode(controller, content, senderID);
 			default:
 				return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
@@ -118,11 +123,28 @@ public class MessageParser {
 		return Keygroup.getInstance().createKeygroup(controller, keygroup);
 	}
 	
+	private static Response<Boolean> keygroupAddClientNode(IControllable controller, String content, NodeID senderID) {
+		// Get KeygroupID and client from JSON via wrapper
+		ConfigIDToKeygroupWrapper<ClientID> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigIDToKeygroupWrapper<ClientID>>() {});
+		KeygroupID keygroupID = wrapper.getKeygroupID();
+		ClientID client = wrapper.getConfigID();
+		
+		// Get keygroup specified from the KeygroupID
+		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
+		
+		if(keygroup.containsReplicaNode(senderID)) {
+			return Keygroup.getInstance().addClientToKeygroup(controller, client, keygroup.getKeygroupID());
+		} else {
+			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
+		}
+	}
+	
 	private static Response<Boolean> keygroupAddReplicaNode(IControllable controller, String content, NodeID senderID) {
 		// Get KeygroupID and node from JSON via wrapper
 		ConfigToKeygroupWrapper<ReplicaNodeConfig> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigToKeygroupWrapper<ReplicaNodeConfig>>() {});
 		KeygroupID keygroupID = wrapper.getKeygroupID();
-		ReplicaNodeConfig replicaNode = (ReplicaNodeConfig) wrapper.getConfig();
+		ReplicaNodeConfig replicaNode = wrapper.getConfig();
 		
 		// Get keygroup specified from the KeygroupID
 		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
@@ -139,7 +161,7 @@ public class MessageParser {
 		// Get KeygroupID and node from JSON via wrapper
 		ConfigToKeygroupWrapper<TriggerNodeConfig> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigToKeygroupWrapper<TriggerNodeConfig>>() {});
 		KeygroupID keygroupID = wrapper.getKeygroupID();
-		TriggerNodeConfig triggerNode = (TriggerNodeConfig) wrapper.getConfig();
+		TriggerNodeConfig triggerNode = wrapper.getConfig();
 		
 		// Get keygroup specified from the KeygroupID
 		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
@@ -204,6 +226,40 @@ public class MessageParser {
 		
 		if(keygroup.containsReplicaNode(senderID)) {
 			return Keygroup.getInstance().removeKeygroup(controller, keygroupID);
+		} else {
+			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
+		}
+	}
+	
+	private static Response<Boolean> keygroupDeleteClient(IControllable controller, String content, NodeID senderID) {
+		// Get KeygroupID and ClientID from JSON via wrapper
+		ConfigIDToKeygroupWrapper<ClientID> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigIDToKeygroupWrapper<ClientID>>() {});
+		KeygroupID keygroupID = wrapper.getKeygroupID();
+		ClientID client = wrapper.getConfigID();
+		
+		// Get keygroup specified from the KeygroupID
+		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
+		
+		if(keygroup.containsReplicaNode(senderID)) {
+			return Keygroup.getInstance().removeClientFromKeygroup(controller, client, keygroup.getKeygroupID());
+		} else {
+			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
+		}
+	}
+	
+	private static Response<Boolean> keygroupDeleteNode(IControllable controller, String content, NodeID senderID) {
+		// Get KeygroupID and node from JSON via wrapper
+		ConfigIDToKeygroupWrapper<NodeID> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigIDToKeygroupWrapper<NodeID>>() {});
+		KeygroupID keygroupID = wrapper.getKeygroupID();
+		NodeID node = wrapper.getConfigID();
+		
+		// Get keygroup specified from the KeygroupID
+		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
+		
+		if(keygroup.containsNode(senderID)) {
+			return Keygroup.getInstance().removeNodeFromKeygroup(controller, node, keygroup.getKeygroupID());
 		} else {
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
