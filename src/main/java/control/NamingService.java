@@ -1,10 +1,17 @@
 package control;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import communication.NamespaceReceiver;
 import database.IControllable;
+import model.JSONable;
+import model.config.NodeConfig;
+import namespace.Node;
 
 public class NamingService {
 	
@@ -47,6 +54,24 @@ public class NamingService {
 		for(String s : initialNodePaths) {
 			createSystemNodeIfDoesNotExist(s);
 		}
+		
+		File initialNodeFile = new File(configuration.getInitNodeFile());
+		String initialNodeJSON = null;
+		
+		try {
+			FileReader reader = new FileReader(initialNodeFile);
+	        char[] chars = new char[(int) initialNodeFile.length()];
+	        reader.read(chars);
+	        initialNodeJSON = new String(chars);
+	        reader.close();
+		} catch (FileNotFoundException e) {
+			throw new IllegalArgumentException("Path does not exist");
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		NodeConfig initNode = JSONable.fromJSON(initialNodeJSON, NodeConfig.class);
+		Node.getInstance().registerNode(controller, initNode);
 	}
 	
 	private void createSystemNodeIfDoesNotExist(String path) throws IllegalArgumentException, InterruptedException {

@@ -36,7 +36,7 @@ public class Node extends SystemEntity {
 	 * @param entity The NodeConfig object be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> registerNode(IControllable controller, NodeConfig entity) {
+	public Response<Boolean> registerNode(IControllable controller, NodeConfig entity) {
 		return registerEntity(controller, entity.getNodeID(), entity);
 	}
 	

@@ -2,8 +2,6 @@ package database;
 
 import java.util.List;
 
-import org.apache.zookeeper.KeeperException;
-
 public interface IControllable {
 
 	public void addNode(String path, String data) throws IllegalArgumentException, InterruptedException;

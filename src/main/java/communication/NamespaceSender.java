@@ -5,13 +5,11 @@ import org.zeromq.ZMQ;
 
 import communication.AbstractSender;
 import control.NamingService;
-import crypto.CryptoProvider;
 import crypto.CryptoProvider.EncryptionAlgorithm;
 import exceptions.FBaseEncryptionException;
 import model.JSONable;
 import model.messages.Envelope;
 import model.messages.Message;
-import namespace.MessageParser;
 
 /**
  * Sends requests to designated receivers.
