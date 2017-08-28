@@ -100,7 +100,7 @@ public class CommunicationTests {
 	}
 
 	@Test
-	public void test1() {
+	public void testReadWithCommunication() {
 		Message m = new Message(Command.NODE_CONFIG_READ, JSONable.toJSON(thisNode.getID()));
 		Envelope e = new Envelope(thisNode.getID(), m);
 		
@@ -115,7 +115,7 @@ public class CommunicationTests {
 	}
 	
 	@Test
-	public void test2() {
+	public void testWriteWithCommunication() {
 		// Set up original version of node
 		NodeID id = new NodeID("test_node_1");
 		String key1 = "my_public_key";
@@ -139,7 +139,9 @@ public class CommunicationTests {
 		sender.setPrivateKey(privateKey);
 		
 		String response = sender.send(e, null, null);
-		assertEquals("It works!", "Yay!", response);
+		
+		System.out.println(response);
+		assertEquals("Proper message received", "true", response);
 	}
 
 	void createNode(NodeConfig c) throws IllegalArgumentException, InterruptedException {
