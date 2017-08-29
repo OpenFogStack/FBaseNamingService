@@ -1,7 +1,15 @@
 package namespace;
 
+import java.io.IOException;
+
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import database.IControllable;
 import model.JSONable;
@@ -110,6 +118,9 @@ public abstract class SystemEntity {
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
 	protected Response<Boolean> createEntity(IControllable controller, ConfigID entityID, Config entity) {
+		// Set version for new entity to 1
+		entity.setVersion(1);
+		
 		// Parse entity to JSON
 		String data = JSONable.toJSON(entity);
 		
@@ -173,6 +184,21 @@ public abstract class SystemEntity {
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
 	protected Response<Boolean> updateEntity(IControllable controller, ConfigID entityID, Config entity) {
+		// Set proper version number
+		try {
+			String json = readEntity(controller, entityID).getValue();
+			ObjectNode object = new ObjectMapper().readValue(json, ObjectNode.class);
+			JsonNode node = object.get("version");
+			int version = Integer.parseInt((node.textValue()));
+			
+			// Increment version for entity
+			entity.setVersion(version++);
+		} catch (NumberFormatException | IOException e) {
+			logger.error("Error parsing version from system");
+			e.printStackTrace();
+			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+		}
+		
 		try {
 			if(isActive(controller, entityID.toString())) {
 				// Parse entity to JSON
