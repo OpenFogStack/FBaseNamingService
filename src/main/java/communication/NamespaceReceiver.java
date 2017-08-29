@@ -42,12 +42,19 @@ public class NamespaceReceiver extends AbstractReceiver {
 			boolean authenticated = envelope.getMessage().verifyMessage(sender.getPublicKey(), EncryptionAlgorithm.RSA);
 			
 			if(authenticated) {
+				logger.debug("Node authenticated for message");
 				Response<?> response = MessageParser.runCommand(ns.controller, envelope);
-				Message m = new Message(null, response.getValue().toString());
+				Message m = new Message();
+				if (response.getValue() != null) {
+					m.setContent(response.getValue().toString());
+				}
 				m.setTextualInfo(response.getResponseCode().toString());
 				m.encryptFields(sender.getPublicKey(), EncryptionAlgorithm.RSA);
+				logger.debug("Sending response");
 				responseSocket.send(JSONable.toJSON(m));
+				logger.debug("Response send");
 			} else {
+				logger.debug("Node is not authenticated");
 				// TODO add unauthenticated stuff
 			}
 		} catch (FBaseEncryptionException e) {
