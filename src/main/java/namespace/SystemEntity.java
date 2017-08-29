@@ -249,6 +249,16 @@ public abstract class SystemEntity {
 	}
 	
 	/**
+	 * Creates proper system path for an active SystemEntity
+	 * 
+	 * @param suffix The configID
+	 * @return Proper system path to SystemEntity
+	 */
+	protected String activePath(ConfigID suffix) {
+		return activePath(suffix.toString());
+	}
+	
+	/**
 	 * Creates proper system path for an tombstoned SystemEntity
 	 * 
 	 * @param suffix The variable part of the system path
@@ -256,6 +266,16 @@ public abstract class SystemEntity {
 	 */
 	protected String tombstonedPath(String suffix) {
 		return pathPrefixTombstoned + suffix;
+	}
+	
+	/**
+	 * Creates proper system path for an tombstoned SystemEntity
+	 * 
+	 * @param suffix The configID
+	 * @return Proper system path to SystemEntity
+	 */
+	protected String tombstonedPath(ConfigID suffix) {
+		return tombstonedPath(suffix.toString());
 	}
 	
 	/**
@@ -300,6 +320,19 @@ public abstract class SystemEntity {
 	}
 	
 	/**
+	 * Checks if entity exists in the active directory
+	 * 
+	 * @param controller Controller for interfacing with base distributed system
+	 * @param suffix The configID to create path for
+	 * @return Boolean true if path exists, false otherwise
+	 * @throws KeeperException
+	 * @throws InterruptedException
+	 */
+	protected boolean isActive(IControllable controller, ConfigID suffix) throws InterruptedException {
+		return isActive(controller, suffix.toString());
+	}
+	
+	/**
 	 * Checks if entity exists in the tombstoned directory
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
@@ -310,6 +343,19 @@ public abstract class SystemEntity {
 	 */
 	protected boolean isTombstoned(IControllable controller, String suffix) throws InterruptedException {
 		return controller.exists(pathPrefixTombstoned + suffix);
+	}
+	
+	/**
+	 * Checks if entity exists in the tombstoned directory
+	 * 
+	 * @param controller Controller for interfacing with base distributed system
+	 * @param suffix The configID to create path for
+	 * @return Boolean true if path exists, false otherwise
+	 * @throws KeeperException
+	 * @throws InterruptedException
+	 */
+	protected boolean isTombstoned(IControllable controller, ConfigID suffix) throws InterruptedException {
+		return isTombstoned(controller, suffix.toString());
 	}
 	
 	/**

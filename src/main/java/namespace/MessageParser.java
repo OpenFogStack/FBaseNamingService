@@ -187,29 +187,7 @@ public class MessageParser {
 	
 	private static Response<String> keygroupRead(IControllable controller, String content, NodeID senderID) {
 		KeygroupID keygroupID = JSONable.fromJSON(content, KeygroupID.class);
-		Response<String> r = Keygroup.getInstance().readKeygroup(controller, keygroupID);
-		
-		if(r.getResponseCode().equals(ResponseCode.SUCCESS)) {
-			KeygroupConfig keygroup = JSONable.fromJSON(r.getValue(), KeygroupConfig.class);
-			
-			if(keygroup.containsReplicaNode(senderID) || keygroup.containsTriggerNode(senderID)) {
-				logger.debug("Sending node " + senderID + " reading all information from " + keygroupID);
-				return r;
-			} else {
-				logger.debug("Sending node " + senderID + " cannot read encryption info from " + keygroupID);
-				
-				// Remove encryption algorithm and secret
-				keygroup.setEncryptionAlgorithm(null);
-				keygroup.setEncryptionSecret(null);
-				
-				String data = JSONable.toJSON(keygroup);
-				
-				return new Response<String>(data, ResponseCode.SUCCESS);
-			}
-		} else {
-			logger.error("Reading " + keygroupID + " returns a " + r.getResponseCode() + " response");
-			return r;
-		}
+		return Keygroup.getInstance().readKeygroup(controller, keygroupID, senderID);
 	}
 	
 	private static Response<Boolean> keygroupUpdateCrypto(IControllable controller, String content, NodeID senderID) {
