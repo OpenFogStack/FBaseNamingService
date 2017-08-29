@@ -37,7 +37,7 @@ public class NamespaceReceiver extends AbstractReceiver {
 			
 			// Verify authenticity
 			NodeID senderID = (NodeID) envelope.getConfigID();
-			Response<String> r = Node.getInstance().getNodeInfo(ns.controller, senderID);
+			Response<String> r = Node.getInstance().readNode(ns.controller, senderID);
 			NodeConfig sender = JSONable.fromJSON(r.getValue(), NodeConfig.class);
 			boolean authenticated = envelope.getMessage().verifyMessage(sender.getPublicKey(), EncryptionAlgorithm.RSA);
 			

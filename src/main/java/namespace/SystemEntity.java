@@ -1,5 +1,8 @@
 package namespace;
 
+import org.apache.log4j.Logger;
+import org.apache.zookeeper.KeeperException;
+
 import database.IControllable;
 import model.JSONable;
 import model.config.Config;
@@ -14,6 +17,8 @@ import model.messages.ResponseCode;
  * @author Wm. Keith van der Meulen
  */
 public abstract class SystemEntity {
+	
+	private static Logger logger = Logger.getLogger(SystemEntity.class.getName());
 	
 	/**
 	 * System prefix for location of all active SystemEntities
@@ -30,7 +35,18 @@ public abstract class SystemEntity {
 	 */
 	private static final int randomIDLength = 32;
 	
+	/**
+	 * The type of the subclass of SystemEntity
+	 */
+	private final String type;
+	
+	/**
+	 * Constructor for SystemEntity
+	 * 
+	 * @param type The name for the Entity type
+	 */
 	SystemEntity(String type) {
+		this.type = type;
 		pathPrefixActive = "/" + type + "/active/";
 		pathPrefixTombstoned = "/" + type + "/tombstoned/";
 	}
@@ -42,6 +58,7 @@ public abstract class SystemEntity {
 	 * @return Response object with String containing an unused node ID
 	 */
 	Response<String> getUnusedID(IControllable controller) {
+		logger.debug("Creating random ID");
 		return getUnusedID(controller, randomIDLength);
 	}
 	
@@ -78,37 +95,41 @@ public abstract class SystemEntity {
 			
 			return new Response<String>(nodeID, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
+			logger.error("Error creating random ID");
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
 	
 	/**
-	 * Registers an entity with the FBase system
+	 * Creates an entity in the FBase system
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
 	 * @param entityID Requested ID of new entity
 	 * @param entity The entity to add
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected Response<Boolean> registerEntity(IControllable controller, ConfigID entityID, Config entity) {
+	protected Response<Boolean> createEntity(IControllable controller, ConfigID entityID, Config entity) {
 		// Parse entity to JSON
 		String data = JSONable.toJSON(entity);
 		
 		if (data == null) {
+			logger.error("Error parsing config to JSON");
 			return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
 		}
 		
 		// Add node to system
 		try {
 			// Check if node already exists
-			if(exists(controller, entityID.toString())) {
+			if(exists(controller, entityID)) {
+				logger.warn(entityID + "already exists");
 				return new Response<Boolean>(false, ResponseCode.ERROR_ALREADY_EXISTS);
 			}
 			
 			controller.addNode(activePath(entityID.toString()), data);
 			return new Response<Boolean>(true, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
+			logger.error("Error adding " + entityID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -121,19 +142,23 @@ public abstract class SystemEntity {
 	 * @param entityID ID of entity to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	protected Response<String> getEntityInfo(IControllable controller, ConfigID entityID) {
+	protected Response<String> readEntity(IControllable controller, ConfigID entityID) {
 		try {
 			String data = null;
 			if(isActive(controller, entityID.toString())) {
 				data = controller.readNode(activePath(entityID.toString())).toString();
+				logger.debug("Reading " + entityID + " from active directory.");
 			} else if (isTombstoned(controller, entityID.toString())) {
 				data = controller.readNode(tombstonedPath(entityID.toString())).toString();
+				logger.debug("Reading " + entityID + " from tombstoned directory.");
 			} else {
+				logger.debug(capitalize(type) + " " + entityID + " doesn't exist");
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 
 			return new Response<String>(data, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
+			logger.error("Error reading " + entityID);
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
@@ -147,25 +172,30 @@ public abstract class SystemEntity {
 	 * @param entity The new entity information to be stored
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected Response<Boolean> updateEntityInfo(IControllable controller, ConfigID entityID, Config entity) {
+	protected Response<Boolean> updateEntity(IControllable controller, ConfigID entityID, Config entity) {
 		try {
 			if(isActive(controller, entityID.toString())) {
 				// Parse entity to JSON
 				String data = JSONable.toJSON(entity);
 				
 				if(data == null) {
+					logger.error("Error parsing config to JSON");
 					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
 				}
 				
 				// Add client to system
 				controller.updateNode(activePath(entityID.toString()), data);
+				logger.debug("Updating " + entityID + " from active directory");
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} else if (isTombstoned(controller, entityID.toString())) {
+				logger.warn("Can't update " + entityID + " because it is tombstoned");
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
+				logger.error(capitalize(type) + " " + entityID + " doesn't exist");
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
+			logger.error("Error updating " + entityID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -179,9 +209,11 @@ public abstract class SystemEntity {
 	 * @param entityID Config to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected Response<Boolean> removeEntity(IControllable controller, ConfigID entityID) {
+	protected Response<Boolean> deleteEntity(IControllable controller, ConfigID entityID) {
 		try {
 			if (controller.exists(activePath(entityID.toString()))) {
+				logger.debug("Tombstoning " + entityID);
+				
 				// Get data from client
 				String data = controller.readNode(activePath(entityID.toString()));
 				
@@ -193,11 +225,14 @@ public abstract class SystemEntity {
 				
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} else if (controller.exists(tombstonedPath(entityID.toString()))) {
+				logger.warn(capitalize(type) + " " + entityID + " already tombstoned");
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
+				logger.error(capitalize(type) + " " + entityID + " doesn't exist");
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		}  catch (InterruptedException e) {
+			logger.error("Error tombstoning " + entityID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -237,6 +272,19 @@ public abstract class SystemEntity {
 	}
 	
 	/**
+	 * Checks if entity exists in either active or tombstoned directories
+	 * 
+	 * @param controller Controller for interfacing with base distributed system
+	 * @param configID The ID of the config to find
+	 * @return Boolean true if path exists, false otherwise
+	 * @throws KeeperException
+	 * @throws InterruptedException
+	 */
+	public boolean exists(IControllable controller, ConfigID configID) throws InterruptedException {
+		return exists(controller, configID.toString());
+	}
+	
+	/**
 	 * Checks if entity exists in the active directory
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
@@ -262,5 +310,15 @@ public abstract class SystemEntity {
 	 */
 	protected boolean isTombstoned(IControllable controller, String suffix) throws InterruptedException {
 		return controller.exists(pathPrefixTombstoned + suffix);
+	}
+	
+	/**
+	 * Capitalizes the first letter of a string
+	 * 
+	 * @param input The string to capitalize
+	 * @return The string with the first letter capitalized
+	 */
+	private String capitalize(String input) {
+		return input.substring(0, 1).toUpperCase() + input.substring(1);
 	}
 }

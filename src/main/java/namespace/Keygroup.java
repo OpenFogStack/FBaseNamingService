@@ -2,7 +2,7 @@ package namespace;
 
 import java.util.function.BiConsumer;
 
-import org.apache.zookeeper.KeeperException;
+import org.apache.log4j.Logger;
 
 import crypto.CryptoProvider.EncryptionAlgorithm;
 import database.IControllable;
@@ -26,6 +26,8 @@ import model.messages.ResponseCode;
  * @author Wm. Keith van der Meulen
  */
 public class Keygroup extends SystemEntity {
+	
+	private static Logger logger = Logger.getLogger(Keygroup.class.getName());
 	
 	private static Keygroup instance;
 	
@@ -51,14 +53,17 @@ public class Keygroup extends SystemEntity {
 	Response<Boolean> createKeygroup(IControllable controller, KeygroupConfig entity) {
 		try {
 			if(isActive(controller, entity.getKeygroupID().toString())) {
+				logger.warn("Keygroup " + entity.getID() + " is already is active");
 				return new Response<Boolean>(false, ResponseCode.ERROR_IS_ACTIVE);
 			} else if (isTombstoned(controller, entity.getKeygroupID().toString())) {
+				logger.warn("Keygroup " + entity.getID() + " is already tombstoned");
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
-				// Parse key group to JSON and into byte[]
+				// Parse key group to JSON
 				String data = JSONable.toJSON(entity);
 				
 				if(data == null) {
+					logger.error("Error parsing keygroup to JSON");
 					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
 				}
 				
@@ -77,6 +82,7 @@ public class Keygroup extends SystemEntity {
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} 
 		} catch (InterruptedException e) {
+			logger.error("Error creating keygroup " + entity.getID());
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -90,9 +96,11 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID of the Keygroup the client should be added to
 	 * @return
 	 */
-	Response<Boolean> addClientToKeygroup(IControllable controller, ClientID clientID, KeygroupID keygroupID) {
+	Response<Boolean> addClient(IControllable controller, ClientID clientID, KeygroupID keygroupID) {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
+				logger.debug("Adding " + clientID + " to " + keygroupID);
+				
 				// Get current data from key group
 				String data = controller.readNode(pathPrefixActive + keygroupID.toString());
 				
@@ -105,11 +113,14 @@ public class Keygroup extends SystemEntity {
 				controller.updateNode(activePath(keygroupID.toString()), data);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} else if (isTombstoned(controller, keygroupID.toString())) {
+				logger.warn("Can't add client " + clientID + " since keygroup " + keygroupID + " is tombstoned");
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
+				logger.warn("Keygroup " + keygroupID + " doesn't exist");
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
+			logger.error("Error adding client " + clientID + " to " + keygroupID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -123,8 +134,9 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID for the config to add the replica node to
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> addReplicaNodeToKeygroup(IControllable controller, ReplicaNodeConfig rnode, KeygroupID keygroupID) {
-		return addNodeToKeygroup(controller, rnode, keygroupID, (keygroupConfig, node)->keygroupConfig.addReplicaNode((ReplicaNodeConfig) node));
+	Response<Boolean> addReplicaNode(IControllable controller, ReplicaNodeConfig rnode, KeygroupID keygroupID) {
+		logger.debug("Adding replica node " + rnode.getID() + " to " + keygroupID);
+		return addNode(controller, rnode, keygroupID, (keygroupConfig, node)->keygroupConfig.addReplicaNode((ReplicaNodeConfig) node));
 	}
 	
 	/**
@@ -135,8 +147,9 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID for the config to add the replica node to
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> addTriggerNodeToKeygroup(IControllable controller, TriggerNodeConfig tNode, KeygroupID keygroupID) {
-		return addNodeToKeygroup(controller, tNode, keygroupID, (keygroupConfig, node)->keygroupConfig.addTriggerNode((TriggerNodeConfig) node));
+	Response<Boolean> addTriggerNode(IControllable controller, TriggerNodeConfig tNode, KeygroupID keygroupID) {
+		logger.debug("Adding trigger node " + tNode.getID() + " to " + keygroupID);
+		return addNode(controller, tNode, keygroupID, (keygroupConfig, node)->keygroupConfig.addTriggerNode((TriggerNodeConfig) node));
 	}
 	
 	/**
@@ -148,26 +161,30 @@ public class Keygroup extends SystemEntity {
 	 * @param addToList Expression to add node to proper list
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	private Response<Boolean> addNodeToKeygroup(IControllable controller, KeygroupMember node, KeygroupID keygroupID, BiConsumer<KeygroupConfig, KeygroupMember> addToList ) {
+	private Response<Boolean> addNode(IControllable controller, KeygroupMember node, KeygroupID keygroupID, BiConsumer<KeygroupConfig, KeygroupMember> addToList ) {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
 				// Get current data from key group
 				String data = controller.readNode(pathPrefixActive + keygroupID.toString());
 				
-				// Parse to object, add nodeID to list, parse back to byte[]
+				// Parse to object, add nodeID to list and back to JSON
 				KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
 				addToList.accept(keygroup, node);
 				data = JSONable.toJSON(keygroup);
 				
 				// Update key group
 				controller.updateNode(activePath(keygroupID.toString()), data);
+				logger.debug("Added node " + node.getID() + " to " + keygroupID);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} else if (isTombstoned(controller, keygroupID.toString())) {
+				logger.warn("Cannot add " + node.getID() + " because keygroup " + keygroupID + "is tombstoned");
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
+				logger.warn("Keygroup " + keygroupID + " doesn't exist");
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
+			logger.error("Error adding " + node.getID() + " to " + keygroupID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -181,7 +198,7 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID of the Keygroup to delete the client from
 	 * @return
 	 */
-	Response<Boolean> removeClientFromKeygroup(IControllable controller, ClientID clientID, KeygroupID keygroupID) {
+	Response<Boolean> removeClient(IControllable controller, ClientID clientID, KeygroupID keygroupID) {
 		try {
 			String data = controller.readNode(activePath(keygroupID.toString()));
 			
@@ -190,8 +207,10 @@ public class Keygroup extends SystemEntity {
 			
 			// Remove client
 			if(keygroup.containsClient(clientID)) {
+				logger.debug("Removing " + clientID + " from " + keygroupID);
 				keygroup.removeClient(clientID);
 			} else {
+				logger.warn("Client " + clientID + " doesn't exists in " + keygroupID);
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 			
@@ -201,6 +220,7 @@ public class Keygroup extends SystemEntity {
 			controller.updateNode(activePath(keygroupID.toString()), data);
 			return new Response<Boolean>(true, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
+			logger.error("Error removing client " + clientID + " from " + keygroupID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -214,19 +234,20 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID to the Keygroup to delete the node from
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> removeNodeFromKeygroup(IControllable controller, NodeID nodeID, KeygroupID keygroupID) {
+	Response<Boolean> deleteNode(IControllable controller, NodeID nodeID, KeygroupID keygroupID) {
 		try {
 			if(isActive(controller, keygroupID.toString())) {
+				logger.debug("Removing node " + nodeID + " from active keygroup " + keygroupID);
 				return removeNodeFromActiveKeygroup(controller, nodeID, keygroupID);
 			} else if (isTombstoned(controller, keygroupID.toString())) {
+				logger.debug("Removing node " + nodeID + " from tombstoned keygroup " + keygroupID);
 				return removeNodeFromTombstonedKeygroup(controller, nodeID, keygroupID);
 			} else {
+				logger.warn("Keygroup " + keygroupID + " doesn't exist");
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
-		} catch (KeeperException e) {
-			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_OTHER);
 		} catch (InterruptedException e) {
+			logger.error("Error deleting node " + nodeID + " from keygroup " + keygroupID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -239,19 +260,23 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID to the Keygroup to get information from
 	 * @return Response object with String containing the Keygroup information
 	 */
-	Response<String> getKeygroupInfo(IControllable controller, KeygroupID keygroupID) {
+	Response<String> readKeygroup(IControllable controller, KeygroupID keygroupID) {
 		try {
 			String data = null;
 			if(isActive(controller, keygroupID.toString())) {
+				logger.debug("Reading active keygroup " + keygroupID);
 				data = controller.readNode(activePath(keygroupID.toString())).toString();
 			} else if (isTombstoned(controller, keygroupID.toString())) {
+				logger.debug("Reading tombstoned keygroup " + keygroupID);
 				data = controller.readNode(tombstonedPath(keygroupID.toString())).toString();
 			} else {
+				logger.warn("Keygroup " + keygroupID + " doesn't exist");
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 			
 			return new Response<String>(data, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
+			logger.error("Error reading keygroup " + keygroupID);
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
@@ -265,19 +290,24 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID to the Keygroup to get information from
 	 * @return Response object with String containing the Keygroup information
 	 */
-	Response<String> getKeygroupInfoAuthorized(IControllable controller, KeygroupID keygroupID) {
+	Response<String> readKeygroupAuthorized(IControllable controller, KeygroupID keygroupID) {
+		logger.debug("Reading keygroup " + keygroupID + " with permissions of authorized node");
 		try {
 			String data = null;
 			if(isActive(controller, keygroupID.toString())) {
+				logger.debug("Reading active keygroup " + keygroupID);
 				data = controller.readNode(activePath(keygroupID.toString())).toString();
 			} else if (isTombstoned(controller, keygroupID.toString())) {
+				logger.debug("Reading tombstoned keygroup " + keygroupID);
 				data = controller.readNode(tombstonedPath(keygroupID.toString())).toString();
 			} else {
+				logger.warn("Keygroup " + keygroupID + " doesn't exist");
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 			
 			return new Response<String>(data, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
+			logger.error("Error reading keygroup " + keygroupID);
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
@@ -291,16 +321,22 @@ public class Keygroup extends SystemEntity {
 	 * @param keygroupID The ID to the Keygroup to get information from
 	 * @return Response object with String containing the Keygroup information
 	 */
-	Response<String> getKeygroupInfoUnauthorized(IControllable controller, KeygroupID keygroupID) {
+	Response<String> readKeygroupUnauthorized(IControllable controller, KeygroupID keygroupID) {
+		logger.debug("Reading keygroup " + keygroupID + " with permissions of unauthorized node");
 		try {
 			String data = null;
 			if(isActive(controller, keygroupID.toString())) {
+				logger.debug("Reading active keygroup " + keygroupID);
 				data = controller.readNode(activePath(keygroupID.toString()));
 			} else if (isTombstoned(controller, keygroupID.toString())) {
+				logger.debug("Reading tombstoned keygroup " + keygroupID);
 				data = controller.readNode(tombstonedPath(keygroupID.toString()));
 			} else {
+				logger.warn("Keygroup " + keygroupID + " doesn't exist");
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
+			
+			logger.debug("Stripping encryption information from keygroup " + keygroupID + " for read by unauthorized node");
 			
 			// Remove encryption algorithm and secret
 			KeygroupConfig keygroup = JSONable.fromJSON(data.toString(), KeygroupConfig.class);
@@ -310,6 +346,7 @@ public class Keygroup extends SystemEntity {
 			
 			return new Response<String>(data.toString(), ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
+			logger.error("Error reading keygroup " + keygroupID);
 			e.printStackTrace();
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
@@ -326,6 +363,7 @@ public class Keygroup extends SystemEntity {
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
 	Response<Boolean> updateKeygroupCrypto(IControllable controller, KeygroupID keygroupID, String encryptionSecret, EncryptionAlgorithm encryptionAlgorithm) {
+		logger.debug("Updating cryptography information for keygroup " + keygroupID);
 		try {
 			if(isActive(controller, keygroupID.toString())) {
 				String data = controller.readNode(activePath(keygroupID.toString()));
@@ -338,11 +376,14 @@ public class Keygroup extends SystemEntity {
 				controller.updateNode(activePath(keygroupID.toString()), data);
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
 			} else if (isTombstoned(controller, keygroupID.toString())) {
+				logger.warn("Can't update cryptography information because keygroup " + keygroupID + " is tombstoned");
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
+				logger.warn("Keygroup " + keygroupID + " doesn't exist");
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
+			logger.error("Error updating cryptography information for keygroup " + keygroupID);
 			e.printStackTrace();
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
@@ -357,7 +398,8 @@ public class Keygroup extends SystemEntity {
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
 	Response<Boolean> removeKeygroup(IControllable controller, KeygroupID keygroupID) {
-		return removeEntity(controller, keygroupID);
+		logger.info("Tombstoning keygroup " + keygroupID);
+		return deleteEntity(controller, keygroupID);
 	}
 	
 	/**
@@ -370,7 +412,7 @@ public class Keygroup extends SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	private Response<Boolean> removeNodeFromActiveKeygroup(IControllable controller, NodeID nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
+	private Response<Boolean> removeNodeFromActiveKeygroup(IControllable controller, NodeID nodeID, KeygroupID keygroupID) throws InterruptedException {
 		String data = controller.readNode(activePath(keygroupID.toString()));
 		
 		// Parse to object
@@ -378,15 +420,19 @@ public class Keygroup extends SystemEntity {
 		
 		// Find correct list
 		if(keygroup.containsReplicaNode(nodeID)) {
+			logger.debug("Attempting to remove replica node " + nodeID + " from keygroup " + keygroupID);
 			// Check Node is not the last replica node
 			if(keygroup.getReplicaNodes().size() == 1) {
+				logger.warn("Can't remove node " + nodeID + " since it is the last replica node in the keygroup " + keygroupID);
 				return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 			}
 			
 			keygroup.removeReplicaNode(nodeID);
 		} else if (keygroup.containsTriggerNode(nodeID)) {
+			logger.debug("Removing trigger node " + nodeID + " from keygroup " + keygroupID);
 			keygroup.removeTriggerNode(nodeID);
 		} else {
+			logger.warn("Keygroup " + keygroupID + " doesn't exist");
 			return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 		}
 		
@@ -394,6 +440,7 @@ public class Keygroup extends SystemEntity {
 		
 		// Update the logical node
 		controller.updateNode(activePath(keygroupID.toString()), data);
+		logger.debug("Node " + nodeID + " successfully removed from keygroup " + keygroupID);
 		return new Response<Boolean>(true, ResponseCode.SUCCESS);
 	}
 	
@@ -407,7 +454,7 @@ public class Keygroup extends SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	private Response<Boolean> removeNodeFromTombstonedKeygroup(IControllable controller, NodeID nodeID, KeygroupID keygroupID) throws KeeperException, InterruptedException {
+	private Response<Boolean> removeNodeFromTombstonedKeygroup(IControllable controller, NodeID nodeID, KeygroupID keygroupID) throws InterruptedException {
 		String data = controller.readNode(tombstonedPath(keygroupID.toString()));
 		
 		// Parse to object
@@ -415,20 +462,27 @@ public class Keygroup extends SystemEntity {
 		
 		// Find correct list
 		if(keygroup.containsReplicaNode(nodeID)) {
+			logger.debug("Attempting to remove replica node " + nodeID + " from keygroup " + keygroupID);
 			// Check Node if node is the last replica node
 			if(keygroup.getReplicaNodes().size() == 1) {
+				logger.debug("Node " + nodeID + " is the last replica node in tombstoned keygroup " + keygroupID);
 				// If no remaining trigger nodes, destroy group, otherwise, send error until trigger node list is empty
 				if(keygroup.getTriggerNodes().size() == 0) {
+					logger.debug("All trigger and replica nodes are gone, so permanently destroying keygroup " + keygroupID);
 					return destroyKeygroup(controller, keygroupID);
 				} else {
+					logger.warn("Can't remove node " + nodeID + " from tombstoned keygroup " + keygroupID + " since trigger nodes still exist in the keygroup");
 					return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 				}
 			}
 			
+			logger.debug("Successfully removed replica node " + nodeID + " from keygroup " + keygroupID);
 			keygroup.removeReplicaNode(nodeID);
 		} else if (keygroup.containsTriggerNode(nodeID)) {
+			logger.debug("Successfully removed trigger node " + nodeID + " from keygroup " + keygroupID);
 			keygroup.removeTriggerNode(nodeID);
 		} else {
+			logger.warn("Keygroup " + keygroupID + " doesn't contain node " + nodeID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 		}
 		
@@ -448,7 +502,8 @@ public class Keygroup extends SystemEntity {
 	 * @throws KeeperException
 	 * @throws InterruptedException
 	 */
-	private Response<Boolean> destroyKeygroup(IControllable controller, KeygroupID keygroupID) throws KeeperException, InterruptedException {
+	private Response<Boolean> destroyKeygroup(IControllable controller, KeygroupID keygroupID) throws InterruptedException {
+		logger.debug("Permanently destroying keygroup " + keygroupID);
 		// Remove Keygroup logical node
 		controller.deleteNode(tombstonedPath(keygroupID.toString()));
 		

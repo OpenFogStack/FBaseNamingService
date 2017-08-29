@@ -5,7 +5,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import org.apache.log4j.Logger;
+
 public class Configuration {
+	
+	private static Logger logger = Logger.getLogger(Configuration.class.getName());
 	
 	private Properties properties;
 	private static final String defaultFileName = "local.properties";
@@ -32,6 +36,8 @@ public class Configuration {
 	}
 	
 	public Configuration(String configName) {
+		logger.info("Starting configuration...");
+		
 		this.properties = new Properties();
 		
 		InputStream is = Configuration.class.getClassLoader().getResourceAsStream(configName);
@@ -74,6 +80,7 @@ public class Configuration {
 			
 			// TODO Check all fields are properly set
 		} catch (IOException | NumberFormatException e) {
+			logger.fatal("Error processing configuration file. Quitting program");
 			e.printStackTrace();
 			System.exit(1);
 		}

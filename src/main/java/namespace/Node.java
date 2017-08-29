@@ -1,5 +1,7 @@
 package namespace;
 
+import org.apache.log4j.Logger;
+
 import database.IControllable;
 import model.config.NodeConfig;
 import model.data.NodeID;
@@ -14,6 +16,8 @@ import model.messages.Response;
  * @author Wm. Keith van der Meulen
  */
 public class Node extends SystemEntity {
+	
+	private static Logger logger = Logger.getLogger(Node.class.getName());
 	
 	private static Node instance;
 	
@@ -36,19 +40,21 @@ public class Node extends SystemEntity {
 	 * @param entity The NodeConfig object be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	public Response<Boolean> registerNode(IControllable controller, NodeConfig entity) {
-		return registerEntity(controller, entity.getNodeID(), entity);
+	public Response<Boolean> createNode(IControllable controller, NodeConfig entity) {
+		logger.debug("Adding node " + entity.getID());
+		return createEntity(controller, entity.getNodeID(), entity);
 	}
 	
 	/**
 	 * Responds with all information about the node
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param nodeID ID of node to get information from
+	 * @param id ID of node to get information from
 	 * @return Response object with String containing the Node information
 	 */
-	public Response<String> getNodeInfo(IControllable controller, NodeID nodeID) {
-		return getEntityInfo(controller, nodeID);
+	public Response<String> readNode(IControllable controller, NodeID id) {
+		logger.debug("Reading node " + id);
+		return readEntity(controller, id);
 	}
 	
 	/**
@@ -58,8 +64,9 @@ public class Node extends SystemEntity {
 	 * @param entity The new NodeConfig object to store
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> updateNodeInfo(IControllable controller, NodeConfig entity) {
-		return updateEntityInfo(controller, entity.getNodeID(), entity);
+	Response<Boolean> updateNode(IControllable controller, NodeConfig entity) {
+		logger.debug("Updating node " + entity.getID());
+		return updateEntity(controller, entity.getNodeID(), entity);
 	}
 	
 	/**
@@ -67,10 +74,11 @@ public class Node extends SystemEntity {
 	 * enter the system again must register as a new node with a new ID
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param nodeID Node to tombstone
+	 * @param id Node to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> removeNode(IControllable controller, NodeID nodeID) {
-		return removeEntity(controller, nodeID);
+	Response<Boolean> deleteNode(IControllable controller, NodeID id) {
+		logger.debug("Deleting node " + id);
+		return deleteEntity(controller, id);
 	}
 }

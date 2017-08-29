@@ -7,6 +7,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import communication.NamespaceReceiver;
 import database.IControllable;
 import model.JSONable;
@@ -15,11 +17,15 @@ import namespace.Node;
 
 public class NamingService {
 	
+	private static Logger logger = Logger.getLogger(NamingService.class.getName());
+	
 	public IControllable controller;
 	public Configuration configuration;
 	public NamespaceReceiver receiver;
 	
 	public NamingService(IControllable controller, Configuration configuration) {
+		logger.info("Starting NamingService...");
+		
 		this.controller = controller;
 		this.configuration = configuration;
 		receiver = new NamespaceReceiver(this, configuration.getAddress(), configuration.getPort());
@@ -27,8 +33,10 @@ public class NamingService {
 		
 		try {
 			initialize();
-		} catch (IllegalArgumentException | InterruptedException e) {
+		} catch (InterruptedException e) {
+			logger.fatal("Cannot initialize NamingService. Quitting program.");
 			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 	
@@ -36,7 +44,9 @@ public class NamingService {
 		receiver.stopReception();
 	}
 	
-	private void initialize() throws IllegalArgumentException, InterruptedException {
+	private void initialize() throws InterruptedException {
+		logger.info("Initializing NamingService...");
+		
 		List<String> initialNodePaths = new ArrayList<String>();
 		
 		initialNodePaths.add("/client");
@@ -65,13 +75,19 @@ public class NamingService {
 	        initialNodeJSON = new String(chars);
 	        reader.close();
 		} catch (FileNotFoundException e) {
-			throw new IllegalArgumentException("Path does not exist");
+			logger.warn("Path " + configuration.getInitNodeFile() + " does not exist");
 		} catch (IOException e) {
+			logger.warn("Error processing " + configuration.getInitNodeFile());
 			e.printStackTrace();
 		}
 		
 		NodeConfig initNode = JSONable.fromJSON(initialNodeJSON, NodeConfig.class);
-		Node.getInstance().registerNode(controller, initNode);
+		if(Node.getInstance().exists(controller, initNode.getID())) {
+			logger.info("Creating initial node...");
+			Node.getInstance().createNode(controller, initNode);
+		} else {
+			logger.debug("Initial node already exists.");
+		}
 	}
 	
 	private void createSystemNodeIfDoesNotExist(String path) throws IllegalArgumentException, InterruptedException {

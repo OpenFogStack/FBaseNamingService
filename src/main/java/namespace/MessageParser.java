@@ -1,5 +1,7 @@
 package namespace;
 
+import org.apache.log4j.Logger;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import crypto.CryptoProvider.EncryptionAlgorithm;
@@ -24,11 +26,15 @@ import model.messages.ResponseCode;
 
 public class MessageParser {
 	
+	private static Logger logger = Logger.getLogger(MessageParser.class.getName());
+	
 	public static Response<?> runCommand(IControllable controller, Envelope envelope) {
 		NodeID senderID = envelope.getNodeID();
 		Message message = envelope.getMessage();
 		Command command = message.getCommand();
 		String content = message.getContent();
+		
+		logger.debug("Running " + command);
 		
 		switch(command) {
 			case CLIENT_CONFIG_CREATE:
@@ -48,9 +54,9 @@ public class MessageParser {
 			case NODE_CONFIG_DELETE:
 				return nodeDelete(controller, content, senderID);
 			case KEYGROUP_CONFIG_CREATE:
-				return keygroupCreate(controller, content);
+				return keygroupCreate(controller, content, senderID);
 			case KEYGROUP_CONFIG_ADD_CLIENT:
-				return keygroupAddClientNode(controller, content, senderID);
+				return keygroupAddClient(controller, content, senderID);
 			case KEYGROUP_CONFIG_ADD_REPLICA_NODE:
 				return keygroupAddReplicaNode(controller, content, senderID);
 			case KEYGROUP_CONFIG_ADD_TRIGGER_NODE:
@@ -72,39 +78,40 @@ public class MessageParser {
 	
 	private static Response<Boolean> clientCreate(IControllable controller, String content) {
 		ClientConfig client = JSONable.fromJSON(content, ClientConfig.class);
-		return Client.getInstance().registerClient(controller, client);
+		return Client.getInstance().createClient(controller, client);
 	}
 	
 	private static Response<String> clientRead(IControllable controller, String content) {
 		ClientID clientID = JSONable.fromJSON(content, ClientID.class);
-		return Client.getInstance().getClientInfo(controller, clientID);
+		return Client.getInstance().readClient(controller, clientID);
 	}
 	
 	private static Response<Boolean> clientUpdate(IControllable controller, String content) {
 		ClientConfig client = JSONable.fromJSON(content, ClientConfig.class);
-		return Client.getInstance().updateClientInfo(controller, client);
+		return Client.getInstance().updateClient(controller, client);
 	}
 	
 	private static Response<Boolean> clientDelete(IControllable controller, String content) {
 		ClientID clientID = JSONable.fromJSON(content, ClientID.class);
-		return Client.getInstance().removeClient(controller, clientID);
+		return Client.getInstance().deleteClient(controller, clientID);
 	}
 	
 	private static Response<Boolean> nodeCreate(IControllable controller, String content) {
 		NodeConfig node = JSONable.fromJSON(content, NodeConfig.class);
-		return Node.getInstance().registerNode(controller, node);
+		return Node.getInstance().createNode(controller, node);
 	}
 	
 	private static Response<String> nodeRead(IControllable controller, String content) {
 		NodeID nodeID = JSONable.fromJSON(content, NodeID.class);
-		return Node.getInstance().getNodeInfo(controller, nodeID);
+		return Node.getInstance().readNode(controller, nodeID);
 	}
 	
 	private static Response<Boolean> nodeUpdate(IControllable controller, String content, NodeID senderID) {
 		NodeConfig node = JSONable.fromJSON(content, NodeConfig.class);
 		if(senderID.equals(node.getNodeID())) {
-			return Node.getInstance().updateNodeInfo(controller, node);
+			return Node.getInstance().updateNode(controller, node);
 		} else {
+			logger.warn("Sending node " + senderID + " not allowed to update " + node.getID());
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
@@ -112,30 +119,32 @@ public class MessageParser {
 	private static Response<Boolean> nodeDelete(IControllable controller, String content, NodeID senderID) {
 		NodeID nodeID = JSONable.fromJSON(content, NodeID.class);
 		if(senderID.equals(nodeID)) {
-			return Node.getInstance().removeNode(controller, nodeID);
+			return Node.getInstance().deleteNode(controller, nodeID);
 		} else {
+			logger.warn("Sending node " + senderID + " not allowed to delete " + nodeID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
 	
-	private static Response<Boolean> keygroupCreate(IControllable controller, String content) {
+	private static Response<Boolean> keygroupCreate(IControllable controller, String content, NodeID senderID) {
 		KeygroupConfig keygroup = JSONable.fromJSON(content, KeygroupConfig.class);
 		return Keygroup.getInstance().createKeygroup(controller, keygroup);
 	}
 	
-	private static Response<Boolean> keygroupAddClientNode(IControllable controller, String content, NodeID senderID) {
+	private static Response<Boolean> keygroupAddClient(IControllable controller, String content, NodeID senderID) {
 		// Get KeygroupID and client from JSON via wrapper
 		ConfigIDToKeygroupWrapper<ClientID> wrapper = JSONable.fromJSON(content, new TypeReference<ConfigIDToKeygroupWrapper<ClientID>>() {});
 		KeygroupID keygroupID = wrapper.getKeygroupID();
 		ClientID client = wrapper.getConfigID();
 		
 		// Get keygroup specified from the KeygroupID
-		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		String keygroupJSON = Keygroup.getInstance().readKeygroupAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
 		if(keygroup.containsReplicaNode(senderID)) {
-			return Keygroup.getInstance().addClientToKeygroup(controller, client, keygroup.getKeygroupID());
+			return Keygroup.getInstance().addClient(controller, client, keygroup.getKeygroupID());
 		} else {
+			logger.warn("Sending node " + senderID + " is not a replica node in " + keygroupID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
@@ -147,12 +156,13 @@ public class MessageParser {
 		ReplicaNodeConfig replicaNode = wrapper.getConfig();
 		
 		// Get keygroup specified from the KeygroupID
-		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		String keygroupJSON = Keygroup.getInstance().readKeygroupAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
 		if(keygroup.containsReplicaNode(senderID)) {
-			return Keygroup.getInstance().addReplicaNodeToKeygroup(controller, replicaNode, keygroup.getKeygroupID());
+			return Keygroup.getInstance().addReplicaNode(controller, replicaNode, keygroup.getKeygroupID());
 		} else {
+			logger.warn("Sending node " + senderID + " is not a replica node in " + keygroupID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
@@ -164,26 +174,30 @@ public class MessageParser {
 		TriggerNodeConfig triggerNode = wrapper.getConfig();
 		
 		// Get keygroup specified from the KeygroupID
-		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		String keygroupJSON = Keygroup.getInstance().readKeygroupAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
 		if(keygroup.containsReplicaNode(senderID)) {
-			return Keygroup.getInstance().addTriggerNodeToKeygroup(controller, triggerNode, keygroup.getKeygroupID());
+			return Keygroup.getInstance().addTriggerNode(controller, triggerNode, keygroup.getKeygroupID());
 		} else {
+			logger.warn("Sending node " + senderID + " is not a replica node in " + keygroupID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
 	
 	private static Response<String> keygroupRead(IControllable controller, String content, NodeID senderID) {
-		KeygroupID id = JSONable.fromJSON(content, KeygroupID.class);
-		Response<String> r = Keygroup.getInstance().getKeygroupInfo(controller, id);
+		KeygroupID keygroupID = JSONable.fromJSON(content, KeygroupID.class);
+		Response<String> r = Keygroup.getInstance().readKeygroup(controller, keygroupID);
 		
 		if(r.getResponseCode().equals(ResponseCode.SUCCESS)) {
 			KeygroupConfig keygroup = JSONable.fromJSON(r.getValue(), KeygroupConfig.class);
 			
 			if(keygroup.containsReplicaNode(senderID) || keygroup.containsTriggerNode(senderID)) {
+				logger.debug("Sending node " + senderID + " reading all information from " + keygroupID);
 				return r;
 			} else {
+				logger.debug("Sending node " + senderID + " cannot read encryption info from " + keygroupID);
+				
 				// Remove encryption algorithm and secret
 				keygroup.setEncryptionAlgorithm(null);
 				keygroup.setEncryptionSecret(null);
@@ -192,10 +206,9 @@ public class MessageParser {
 				
 				return new Response<String>(data, ResponseCode.SUCCESS);
 			}
-		} else if (r.getValue() == null){
-			return r;
 		} else {
-			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
+			logger.error("Reading " + keygroupID + " returns a " + r.getResponseCode() + " response");
+			return r;
 		}
 	}
 	
@@ -207,12 +220,13 @@ public class MessageParser {
 		EncryptionAlgorithm encryptionAlgorithm = wrapper.getEncryptionAlgorithm();
 		
 		// Get keygroup specified from the KeygroupID
-		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		String keygroupJSON = Keygroup.getInstance().readKeygroupAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
 		if(keygroup.containsReplicaNode(senderID)) {
 			return Keygroup.getInstance().updateKeygroupCrypto(controller, keygroupID, encryptionSecret, encryptionAlgorithm);
 		} else {
+			logger.warn("Sending node " + senderID + " is not a replica node in " + keygroupID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
@@ -221,12 +235,13 @@ public class MessageParser {
 		KeygroupID keygroupID = JSONable.fromJSON(content, KeygroupID.class);
 		
 		// Get keygroup specified from the KeygroupID
-		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		String keygroupJSON = Keygroup.getInstance().readKeygroupAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
 		if(keygroup.containsReplicaNode(senderID)) {
 			return Keygroup.getInstance().removeKeygroup(controller, keygroupID);
 		} else {
+			logger.warn("Sending node " + senderID + " is not a replica node in " + keygroupID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
@@ -238,12 +253,13 @@ public class MessageParser {
 		ClientID client = wrapper.getConfigID();
 		
 		// Get keygroup specified from the KeygroupID
-		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		String keygroupJSON = Keygroup.getInstance().readKeygroupAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
 		if(keygroup.containsReplicaNode(senderID)) {
-			return Keygroup.getInstance().removeClientFromKeygroup(controller, client, keygroup.getKeygroupID());
+			return Keygroup.getInstance().removeClient(controller, client, keygroup.getKeygroupID());
 		} else {
+			logger.warn("Sending node " + senderID + " is not a replica node in " + keygroupID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}
@@ -255,12 +271,13 @@ public class MessageParser {
 		NodeID node = wrapper.getConfigID();
 		
 		// Get keygroup specified from the KeygroupID
-		String keygroupJSON = Keygroup.getInstance().getKeygroupInfoAuthorized(controller, keygroupID).getValue();
+		String keygroupJSON = Keygroup.getInstance().readKeygroupAuthorized(controller, keygroupID).getValue();
 		KeygroupConfig keygroup = JSONable.fromJSON(keygroupJSON, KeygroupConfig.class);
 		
 		if(keygroup.containsNode(senderID)) {
-			return Keygroup.getInstance().removeNodeFromKeygroup(controller, node, keygroup.getKeygroupID());
+			return Keygroup.getInstance().deleteNode(controller, node, keygroup.getKeygroupID());
 		} else {
+			logger.warn("Sending node " + senderID + " is not a node in " + keygroupID);
 			return new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
 		}
 	}

@@ -1,5 +1,7 @@
 package namespace;
 
+import org.apache.log4j.Logger;
+
 import database.IControllable;
 import model.config.ClientConfig;
 import model.data.ClientID;
@@ -14,6 +16,8 @@ import model.messages.Response;
  * @author Wm. Keith van der Meulen
  */
 public class Client extends SystemEntity {
+	
+	private static Logger logger = Logger.getLogger(Client.class.getName());
 	
 	private static Client instance;
 	
@@ -36,19 +40,21 @@ public class Client extends SystemEntity {
 	 * @param entity The ClientConfig to be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> registerClient(IControllable controller, ClientConfig entity) {
-		return registerEntity(controller, entity.getClientID(), entity);
+	Response<Boolean> createClient(IControllable controller, ClientConfig entity) {
+		logger.debug("Adding client " + entity.getID());
+		return createEntity(controller, entity.getClientID(), entity);
 	}
 	
 	/**
 	 * Responds with all information about the client
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param clientID ID of client to get information from
+	 * @param id ID of client to get information from
 	 * @return Response object with String containing the Client information
 	 */
-	public Response<String> getClientInfo(IControllable controller, ClientID clientID) {
-		return getEntityInfo(controller, clientID);
+	public Response<String> readClient(IControllable controller, ClientID id) {
+		logger.debug("Reading client " + id);
+		return readEntity(controller, id);
 	}
 	
 	/**
@@ -58,8 +64,9 @@ public class Client extends SystemEntity {
 	 * @param entity The new ClientConfig object to store
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> updateClientInfo(IControllable controller, ClientConfig entity) {
-		return updateEntityInfo(controller, entity.getClientID(), entity);
+	Response<Boolean> updateClient(IControllable controller, ClientConfig entity) {
+		logger.debug("Updating client " + entity.getID());
+		return updateEntity(controller, entity.getClientID(), entity);
 	}
 	
 	/**
@@ -67,10 +74,11 @@ public class Client extends SystemEntity {
 	 * enter the system again must register as a new client with a new ID
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
-	 * @param clientID Client to tombstone
+	 * @param id Client to tombstone
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> removeClient(IControllable controller, ClientID clientID) {
-		return removeEntity(controller, clientID);
+	Response<Boolean> deleteClient(IControllable controller, ClientID id) {
+		logger.debug("Removing client " + id);
+		return deleteEntity(controller, id);
 	}
 }
