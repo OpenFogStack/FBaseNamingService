@@ -128,7 +128,7 @@ public class MessageParser {
 	
 	private static Response<String> keygroupCreate(IControllable controller, String content, NodeID senderID) {
 		KeygroupConfig keygroup = JSONable.fromJSON(content, KeygroupConfig.class);
-		return Keygroup.getInstance().createKeygroup(controller, keygroup);
+		return Keygroup.getInstance().createKeygroup(controller, keygroup, senderID);
 	}
 	
 	private static Response<String> keygroupAddClient(IControllable controller, String content, NodeID senderID) {

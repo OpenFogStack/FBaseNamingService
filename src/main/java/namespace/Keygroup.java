@@ -45,9 +45,10 @@ public class Keygroup extends SystemEntity {
 	 * 
 	 * @param controller Controller for interfacing with base distributed system
 	 * @param entity KeygroupConfig object to add to system
+	 * @param senderID - the id of the sending node
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<String> createKeygroup(IControllable controller, KeygroupConfig entity) {
+	Response<String> createKeygroup(IControllable controller, KeygroupConfig entity, NodeID senderID) {
 		try {
 			if(isActive(controller, entity.getKeygroupID())) {
 				logger.warn("Keygroup " + entity.getID() + " is already is active");
@@ -56,6 +57,10 @@ public class Keygroup extends SystemEntity {
 				logger.warn("Keygroup " + entity.getID() + " is already tombstoned");
 				return new Response<String>(null, ResponseCode.ERROR_TOMBSTONED);
 			} else {
+				// add senderID to entity
+				ReplicaNodeConfig repConfig = new ReplicaNodeConfig(senderID);
+				entity.addReplicaNode(repConfig);
+				
 				// Build App Node if necessary
 				if(!isActive(controller, entity.getKeygroupID().getAppPath())) {
 					controller.addNode(activePath(entity.getKeygroupID().getAppPath()), "");
