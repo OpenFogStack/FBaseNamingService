@@ -1,12 +1,12 @@
 package namespace;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.KeeperException;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -187,12 +187,11 @@ public abstract class SystemEntity {
 		// Set proper version number
 		try {
 			String json = readEntity(controller, entityID).getValue();
-			ObjectNode object = new ObjectMapper().readValue(json, ObjectNode.class);
-			JsonNode node = object.get("version");
-			int version = Integer.parseInt((node.textValue()));
+			HashMap<String,Object> o = new ObjectMapper().readValue(json, new TypeReference<HashMap<String,Object>>() {});
+			int version = Integer.parseInt((o.get("version").toString()));
 			
 			// Increment version for entity
-			entity.setVersion(version++);
+			entity.setVersion(version + 1);
 		} catch (NumberFormatException | IOException e) {
 			logger.error("Error parsing version from system");
 			e.printStackTrace();
