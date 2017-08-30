@@ -115,7 +115,7 @@ public class NamingService {
 			}
 			
 			NodeConfig initNode = JSONable.fromJSON(initialNodeJSON, NodeConfig.class);
-			if(Node.getInstance().exists(controller, initNode.getID())) {
+			if(!Node.getInstance().exists(controller, initNode.getID())) {
 				logger.info("Creating initial node...");
 				Node.getInstance().createNode(controller, initNode);
 			} else {

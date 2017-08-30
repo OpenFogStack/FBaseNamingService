@@ -367,7 +367,8 @@ public abstract class SystemEntity {
 	 * @throws InterruptedException
 	 */
 	protected boolean isTombstoned(IControllable controller, String suffix) throws InterruptedException {
-		return controller.exists(pathPrefixTombstoned + suffix);
+		boolean temp = controller.exists(pathPrefixTombstoned + suffix);
+		return temp;
 	}
 	
 	/**
