@@ -17,6 +17,7 @@ public class Configuration {
 	// General
 	private String address;
 	private int port;
+	private boolean debugMode;
 	
 	// Security
 	private String publicKey;
@@ -52,6 +53,7 @@ public class Configuration {
 			// General
 			address = properties.getProperty("address");
 			port = Integer.parseInt(properties.getProperty("port"));
+			debugMode = Boolean.parseBoolean(properties.getProperty("debugMode", "false"));
 			
 			// Security 
 			publicKey = properties.getProperty("publicKey");
@@ -96,6 +98,10 @@ public class Configuration {
 
 	public int getPort() {
 		return port;
+	}
+	
+	public boolean isDebugMode() {
+		return debugMode;
 	}
 
 	public String getPublicKey() {

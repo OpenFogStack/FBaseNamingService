@@ -5,6 +5,12 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -111,6 +117,28 @@ public class LocalFileController implements IControllable {
 	public boolean exists(String path) {
 		File f = new File(rootDir, path);
 		return f.exists();
+	}
+
+	@Override
+	public void deleteNodeRecursive(String path) throws IOException {
+		Path directory = Paths.get(new File(rootDir, path).getAbsolutePath());
+		Files.walkFileTree(directory, new SimpleFileVisitor<Path>() {
+			
+			@Override
+			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+					throws IOException {
+				Files.delete(file);
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult postVisitDirectory(Path dir, IOException exc)
+					throws IOException {
+				Files.delete(dir);
+				return FileVisitResult.CONTINUE;
+			}
+			
+		});
 	}
 	
 }

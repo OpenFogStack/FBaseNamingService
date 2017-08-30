@@ -11,9 +11,11 @@ import exceptions.FBaseEncryptionException;
 import model.JSONable;
 import model.config.NodeConfig;
 import model.data.NodeID;
+import model.messages.Command;
 import model.messages.Envelope;
 import model.messages.Message;
 import model.messages.Response;
+import model.messages.ResponseCode;
 import namespace.MessageParser;
 import namespace.Node;
 
@@ -41,9 +43,31 @@ public class NamespaceReceiver extends AbstractReceiver {
 			NodeConfig sender = JSONable.fromJSON(r.getValue(), NodeConfig.class);
 			boolean authenticated = envelope.getMessage().verifyMessage(sender.getPublicKey(), EncryptionAlgorithm.RSA);
 			
-			if(authenticated) {
+			if (authenticated) {
 				logger.debug("Node authenticated for message");
-				Response<?> response = MessageParser.runCommand(ns.controller, envelope);
+				
+				Response<?> response = null;
+				if (Command.RESET_NAMING_SERVICE.equals(envelope.getMessage().getCommand())) {
+					// process delete request
+					if (ns.configuration.isDebugMode()) {
+						logger.debug("Resetting namingserivce data");
+						try {
+							response = new Response<Boolean>(ns.initializeDataStorage(true), ResponseCode.SUCCESS);
+						} catch (InterruptedException e) {
+							logger.error("Could not wipe storage: " + e.getMessage());
+							response = new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+							e.printStackTrace();
+						}
+					} else {
+						logger.debug("Received request to reset namingservice data, "
+								+ "but not in debug mode");
+						response = new Response<Boolean>(false, ResponseCode.ERROR_ILLEGAL_COMMAND);
+					}
+				} else {
+					// normally process command
+					response = MessageParser.runCommand(ns.controller, envelope);
+				}
+				
 				Message m = new Message();
 				if (response.getValue() != null) {
 					m.setContent(response.getValue().toString());
@@ -53,10 +77,12 @@ public class NamespaceReceiver extends AbstractReceiver {
 				logger.debug("Sending response");
 				responseSocket.send(JSONable.toJSON(m));
 				logger.debug("Response send");
+			
 			} else {
 				logger.debug("Node is not authenticated");
 				// TODO add unauthenticated stuff
 			}
+			
 		} catch (FBaseEncryptionException e) {
 			logger.error("Decryption failed");
 			e.printStackTrace();

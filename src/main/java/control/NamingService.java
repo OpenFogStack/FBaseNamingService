@@ -32,7 +32,7 @@ public class NamingService {
 		receiver.startReceiving();
 		
 		try {
-			initialize();
+			initializeDataStorage(false);
 		} catch (InterruptedException e) {
 			logger.fatal("Cannot initialize NamingService. Quitting program.");
 			e.printStackTrace();
@@ -44,8 +44,16 @@ public class NamingService {
 		receiver.stopReception();
 	}
 	
-	private void initialize() throws InterruptedException {
+	/**
+	 * Initializes the data storage and wipes existent data if wipeExistent == true
+	 * 
+	 * @param wipeExistent
+	 * @throws InterruptedException
+	 * @return true, if successful
+	 */
+	public boolean initializeDataStorage(boolean wipeExistent) throws InterruptedException {
 		logger.info("Initializing NamingService...");
+		boolean success = true;
 		
 		List<String> initialNodePaths = new ArrayList<String>();
 		
@@ -61,38 +69,78 @@ public class NamingService {
 		initialNodePaths.add("/keygroup/active");
 		initialNodePaths.add("/keygroup/tombstoned");
 		
-		for(String s : initialNodePaths) {
-			createSystemNodeIfDoesNotExist(s);
+		if (wipeExistent) {
+			logger.info("Wiping existing data");
+			
+			for (int j = initialNodePaths.size() - 1; j >= 0; j--){
+				if (controller.exists(initialNodePaths.get(j))) {
+					try {
+						controller.deleteNodeRecursive((initialNodePaths.get(j)));
+					} catch (IOException e) {
+						logger.error("Failed to delete node: " + e.getMessage());
+						success = false;
+						e.printStackTrace();
+					}
+				}
+			}
+			
+			logger.debug("Deleted existing data");
 		}
 		
-		File initialNodeFile = new File(configuration.getInitNodeFile());
-		String initialNodeJSON = null;
-		
-		try {
-			FileReader reader = new FileReader(initialNodeFile);
-	        char[] chars = new char[(int) initialNodeFile.length()];
-	        reader.read(chars);
-	        initialNodeJSON = new String(chars);
-	        reader.close();
-		} catch (FileNotFoundException e) {
-			logger.warn("Path " + configuration.getInitNodeFile() + " does not exist");
-		} catch (IOException e) {
-			logger.warn("Error processing " + configuration.getInitNodeFile());
-			e.printStackTrace();
+		// we consider it to be the first startup, if any of the initialNodePath nodes did not exist 
+		boolean firstStartup = false;
+		for (String s : initialNodePaths) {
+			if (createSystemNodeIfDoesNotExist(s)) {
+				firstStartup = true;
+			}
 		}
 		
-		NodeConfig initNode = JSONable.fromJSON(initialNodeJSON, NodeConfig.class);
-		if(Node.getInstance().exists(controller, initNode.getID())) {
-			logger.info("Creating initial node...");
-			Node.getInstance().createNode(controller, initNode);
-		} else {
-			logger.debug("Initial node already exists.");
+		if (firstStartup) {			
+			File initialNodeFile = new File(configuration.getInitNodeFile());
+			String initialNodeJSON = null;
+			
+			try {
+				FileReader reader = new FileReader(initialNodeFile);
+		        char[] chars = new char[(int) initialNodeFile.length()];
+		        reader.read(chars);
+		        initialNodeJSON = new String(chars);
+		        reader.close();
+			} catch (FileNotFoundException e) {
+				logger.warn("Path " + configuration.getInitNodeFile() + " does not exist");
+				success = false;
+			} catch (IOException e) {
+				logger.warn("Error processing " + configuration.getInitNodeFile());
+				e.printStackTrace();
+				success = false;
+			}
+			
+			NodeConfig initNode = JSONable.fromJSON(initialNodeJSON, NodeConfig.class);
+			if(Node.getInstance().exists(controller, initNode.getID())) {
+				logger.info("Creating initial node...");
+				Node.getInstance().createNode(controller, initNode);
+			} else {
+				logger.debug("Initial node already exists.");
+			}
 		}
+		
+		return success;
 	}
 	
-	private void createSystemNodeIfDoesNotExist(String path) throws IllegalArgumentException, InterruptedException {
-		if(controller.exists(path) == false) {
+	/**
+	 * Create a system node if it does not exist yet.
+	 * 
+	 * @param path for the to be created node
+	 * @return true, if not existed before
+	 * @throws IllegalArgumentException
+	 * @throws InterruptedException
+	 */
+	private boolean createSystemNodeIfDoesNotExist(String path)
+			throws IllegalArgumentException, InterruptedException {
+		boolean firstStartup = false;
+		if (controller.exists(path) == false) {
+			firstStartup = true;
 			controller.addNode(path, "");
 		}
+		return firstStartup;
 	}
 }

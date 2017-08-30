@@ -57,6 +57,11 @@ public class CommunicationTests {
 	@Before
 	public void setUp() throws Exception {
 		Configuration configuration = new Configuration();
+		File root = new File(configuration.getRoot());
+		TestUtil.deleteDir(new File(root, "client"));
+		TestUtil.deleteDir(new File(root, "node"));
+		TestUtil.deleteDir(new File(root, "keygroup"));
+		
 		controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		ns = new NamingService(controller, configuration);
 		
@@ -89,16 +94,24 @@ public class CommunicationTests {
 		java.util.concurrent.TimeUnit.SECONDS.sleep(5);
 		
 		ns.tearDown();
-		
-		Configuration configuration = new Configuration();
-		File root = new File(configuration.getRoot());
-		TestUtil.deleteDir(new File(root, "client"));
-		TestUtil.deleteDir(new File(root, "node"));
-		TestUtil.deleteDir(new File(root, "keygroup"));
-		
 		sender.shutdown();
 	}
 
+	@Test
+	public void testResetNamingService() throws IllegalArgumentException, InterruptedException {
+		Message m = new Message();
+		m.setCommand(Command.RESET_NAMING_SERVICE);
+		m.setContent("");
+		Envelope e = new Envelope(thisNode.getID(), m);
+		
+		sender.setPrivateKey(privateKey);
+		sender.setPublicKey(publicKey);
+		
+		String response = sender.send(e, null, null);
+		Thread.sleep(10000);
+		assertTrue(Boolean.parseBoolean(response));
+	}
+	
 	@Test
 	public void testReadWithCommunication() {
 		Message m = new Message(Command.NODE_CONFIG_READ, JSONable.toJSON(thisNode.getID()));

@@ -1,5 +1,6 @@
 package database.zookeeper;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.apache.zookeeper.CreateMode;
@@ -117,6 +118,12 @@ public class ZkController implements IControllable {
 		}
 		
 		return false;
+	}
+
+	@Override
+	public void deleteNodeRecursive(String path) throws IOException {
+		// TODO Implement Functionality
+		throw new IllegalArgumentException("Not yet implemented");
 	}
 
 }
