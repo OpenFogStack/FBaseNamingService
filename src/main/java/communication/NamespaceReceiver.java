@@ -84,8 +84,7 @@ public class NamespaceReceiver extends AbstractReceiver {
 			}
 			
 		} catch (FBaseEncryptionException e) {
-			logger.error("Decryption failed");
-			e.printStackTrace();
+			logger.error("Decryption failed", e);
 		}
 	}
 

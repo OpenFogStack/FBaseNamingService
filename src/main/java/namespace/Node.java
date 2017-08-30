@@ -19,13 +19,9 @@ public class Node extends SystemEntity {
 	
 	private static Logger logger = Logger.getLogger(Node.class.getName());
 	
-	private static Node instance;
+	private static Node instance = new Node();
 	
 	public static Node getInstance() {
-		if(instance == null) {
-			instance = new Node();
-		}
-		
 		return instance;
 	}
 	

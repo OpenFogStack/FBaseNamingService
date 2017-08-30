@@ -30,13 +30,9 @@ public class Keygroup extends SystemEntity {
 	
 	private static Logger logger = Logger.getLogger(Keygroup.class.getName());
 	
-	private static Keygroup instance;
+	private static Keygroup instance = new Keygroup();
 	
 	public static Keygroup getInstance() {
-		if(instance == null) {
-			instance = new Keygroup();
-		}
-		
 		return instance;
 	}
 	
@@ -74,8 +70,8 @@ public class Keygroup extends SystemEntity {
 				return createEntity(controller, entity.getID(), entity);
 			} 
 		} catch (InterruptedException e) {
-			logger.error("Error creating keygroup " + entity.getID());
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error creating keygroup " + entity.getID(), e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -108,8 +104,8 @@ public class Keygroup extends SystemEntity {
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
-			logger.error("Error adding client " + clientID + " to " + keygroupID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error adding client " + clientID + " to " + keygroupID, e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -170,8 +166,8 @@ public class Keygroup extends SystemEntity {
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
-			logger.error("Error adding " + node.getID() + " to " + keygroupID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error adding " + node.getID() + " to " + keygroupID, e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -225,8 +221,8 @@ public class Keygroup extends SystemEntity {
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
-			logger.error("Error deleting node " + nodeID + " from keygroup " + keygroupID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error deleting node " + nodeID + " from keygroup " + keygroupID, e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -333,8 +329,8 @@ public class Keygroup extends SystemEntity {
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
-			logger.error("Error updating cryptography information for keygroup " + keygroupID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error updating cryptography information for keygroup " + keygroupID, e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}

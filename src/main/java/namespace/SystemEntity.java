@@ -103,8 +103,8 @@ public abstract class SystemEntity {
 			
 			return new Response<String>(nodeID, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
-			logger.error("Error creating random ID");
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error creating random ID", e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -140,8 +140,8 @@ public abstract class SystemEntity {
 			controller.addNode(activePath(entityID), data);
 			return new Response<String>(data, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
-			logger.error("Error adding " + entityID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error adding " + entityID, e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -169,8 +169,8 @@ public abstract class SystemEntity {
 
 			return new Response<String>(data, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
-			logger.error("Error reading " + entityID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error reading " + entityID, e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -193,8 +193,7 @@ public abstract class SystemEntity {
 			// Increment version for entity
 			entity.setVersion(version + 1);
 		} catch (NumberFormatException | IOException e) {
-			logger.error("Error parsing version from system");
-			e.printStackTrace();
+			logger.error("Error parsing version from system", e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 		
@@ -220,8 +219,8 @@ public abstract class SystemEntity {
 				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
-			logger.error("Error updating " + entityID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error updating " + entityID, e);
 			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
@@ -257,8 +256,8 @@ public abstract class SystemEntity {
 				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		}  catch (InterruptedException e) {
-			logger.error("Error tombstoning " + entityID);
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error tombstoning " + entityID, e);
 			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 		}
 	}

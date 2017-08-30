@@ -24,20 +24,9 @@ public class NamingService {
 	public NamespaceReceiver receiver;
 	
 	public NamingService(IControllable controller, Configuration configuration) {
-		logger.info("Starting NamingService...");
-		
 		this.controller = controller;
 		this.configuration = configuration;
 		receiver = new NamespaceReceiver(this, configuration.getAddress(), configuration.getPort());
-		receiver.startReceiving();
-		
-		try {
-			initializeDataStorage(false);
-		} catch (InterruptedException e) {
-			logger.fatal("Cannot initialize NamingService. Quitting program.");
-			e.printStackTrace();
-			System.exit(1);
-		}
 	}
 	
 	public void tearDown() {
@@ -126,6 +115,19 @@ public class NamingService {
 		return success;
 	}
 	
+
+	public void start() {
+		try {
+			initializeDataStorage(false);
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			logger.fatal("Cannot initialize NamingService. Quitting program.", e);
+			System.exit(1);
+		}
+		
+		receiver.startReceiving();
+	}
+	
 	/**
 	 * Create a system node if it does not exist yet.
 	 * 
@@ -134,12 +136,11 @@ public class NamingService {
 	 * @throws IllegalArgumentException
 	 * @throws InterruptedException
 	 */
-	private boolean createSystemNodeIfDoesNotExist(String path)
-			throws IllegalArgumentException, InterruptedException {
+	private boolean createSystemNodeIfDoesNotExist(String path) throws IllegalArgumentException, InterruptedException {
 		boolean firstStartup = false;
-		if (controller.exists(path) == false) {
-			firstStartup = true;
+		if(controller.exists(path) == false) {
 			controller.addNode(path, "");
+			firstStartup = true;
 		}
 		return firstStartup;
 	}

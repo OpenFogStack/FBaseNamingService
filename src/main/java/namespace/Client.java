@@ -20,13 +20,9 @@ public class Client extends SystemEntity {
 	
 	private static Logger logger = Logger.getLogger(Client.class.getName());
 	
-	private static Client instance;
+	private static Client instance = new Client();
 	
 	public static Client getInstance() {
-		if(instance == null) {
-			instance = new Client();
-		}
-		
 		return instance;
 	}
 	

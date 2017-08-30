@@ -57,8 +57,7 @@ public class NamespaceSender extends AbstractSender {
 			
 			return m.getContent();
 		} catch (FBaseEncryptionException e) {
-			logger.error("Error signing message");
-			e.printStackTrace();
+			logger.error("Error signing message", e);
 			return null;
 		}
 	}
