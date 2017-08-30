@@ -80,8 +80,7 @@ public class Configuration {
 			
 			// TODO Check all fields are properly set
 		} catch (IOException | NumberFormatException e) {
-			logger.fatal("Error processing configuration file. Quitting program");
-			e.printStackTrace();
+			logger.fatal("Error processing configuration file. Quitting program", e);
 			System.exit(1);
 		}
 	}

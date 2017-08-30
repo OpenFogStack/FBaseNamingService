@@ -8,9 +8,14 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import database.IControllable;
 
 public class LocalFileController implements IControllable {
+	
+	private static Logger logger = Logger.getLogger(LocalFileController.class.getName());
+	
 	private File rootDir;
 	private String dataFileName;
 	
@@ -34,7 +39,7 @@ public class LocalFileController implements IControllable {
 			writer.println(data);
 			writer.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			logger.error("Error in controller", e);
 		}
 	}
 
@@ -53,7 +58,7 @@ public class LocalFileController implements IControllable {
 		} catch (FileNotFoundException e) {
 			throw new IllegalArgumentException("Path '" + path + "' does not exist");
 		} catch (IOException e) {
-			e.printStackTrace();
+			logger.error("Error in controller", e);
 		}
 		
 		return content;
@@ -72,7 +77,7 @@ public class LocalFileController implements IControllable {
 			writer.println(data);
 			writer.close();
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			logger.error("Error in controller", e);
 		}
 		
 	}

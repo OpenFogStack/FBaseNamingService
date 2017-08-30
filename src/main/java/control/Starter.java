@@ -16,7 +16,8 @@ public class Starter {
 		
 		Configuration configuration = new Configuration();
 		IControllable controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
-		new NamingService(controller, configuration);
+		NamingService ns = new NamingService(controller, configuration);
+		ns.start();
 	}
 	
 }

@@ -2,6 +2,7 @@ package database.zookeeper;
 
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
@@ -14,6 +15,8 @@ import org.apache.zookeeper.ZooDefs.Ids;
 import database.IControllable;
 
 public class ZkController implements IControllable {
+	
+	private static Logger logger = Logger.getLogger(ZkController.class.getName());
 	
 	private ZooKeeper zk;
 	
@@ -31,10 +34,11 @@ public class ZkController implements IControllable {
 			} else if(e instanceof NoNodeException) {
 				throw new IllegalArgumentException("Intermediate node in path '" + path + "' does not exist.");
 			} else {
-				e.printStackTrace();
+				logger.error("Error in controller", e);
 			}
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error in controller", e);
 		}
 	}
 	
@@ -47,10 +51,11 @@ public class ZkController implements IControllable {
 			if(e instanceof NoNodeException) {
 				throw new IllegalArgumentException("Path '" + path + "' does not exist");
 			} else {
-				e.printStackTrace();
+				logger.error("Error in controller", e);
 			}
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error in controller", e);
 		}
 		
 		return new String(data);
@@ -61,9 +66,9 @@ public class ZkController implements IControllable {
 		try {
 			zk.setData(path, data.getBytes(), zk.exists(path, true).getVersion());
 		} catch (KeeperException e) {
-			e.printStackTrace();
+			logger.error("Error in controller", e);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			logger.error("Error in controller", e);
 		} catch (NullPointerException e){
 			throw new IllegalArgumentException("Argument evalutates to null path");
 		}
@@ -74,14 +79,15 @@ public class ZkController implements IControllable {
 		try {
 			zk.delete(path, zk.exists(path, true).getVersion());
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error in controller", e);
 		} catch (KeeperException e) {
 			if(e instanceof NotEmptyException) {
 				throw new IllegalArgumentException("Directory not empty for '" + path + "'");
 			} else if(e instanceof BadArgumentsException) {
 				throw new IllegalArgumentException("Invalid delete path");
 			} else {
-				e.printStackTrace();
+				logger.error("Error in controller", e);
 			}
 		} catch (NullPointerException e){
 			throw new IllegalArgumentException("Argument evalutates to null path");
@@ -97,10 +103,11 @@ public class ZkController implements IControllable {
 			if(e instanceof NoNodeException) {
 				throw new IllegalArgumentException("Intermediate node in path '" + path + "' does not exist.");
 			} else {
-				e.printStackTrace();
+				logger.error("Error in controller", e);
 			}
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error in controller", e);
 		}
 		
 		return znodeList;
@@ -111,9 +118,10 @@ public class ZkController implements IControllable {
 		try {
 			return (zk.exists(path, true) != null) ? true : false;
 		} catch (KeeperException e) {
-			e.printStackTrace();
+			logger.error("Error in controller", e);
 		} catch (InterruptedException e) {
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
+			logger.error("Error in controller", e);
 		}
 		
 		return false;

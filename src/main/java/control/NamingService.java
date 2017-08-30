@@ -24,20 +24,9 @@ public class NamingService {
 	public NamespaceReceiver receiver;
 	
 	public NamingService(IControllable controller, Configuration configuration) {
-		logger.info("Starting NamingService...");
-		
 		this.controller = controller;
 		this.configuration = configuration;
 		receiver = new NamespaceReceiver(this, configuration.getAddress(), configuration.getPort());
-		receiver.startReceiving();
-		
-		try {
-			initialize();
-		} catch (InterruptedException e) {
-			logger.fatal("Cannot initialize NamingService. Quitting program.");
-			e.printStackTrace();
-			System.exit(1);
-		}
 	}
 	
 	public void tearDown() {
@@ -77,8 +66,7 @@ public class NamingService {
 		} catch (FileNotFoundException e) {
 			logger.warn("Path " + configuration.getInitNodeFile() + " does not exist");
 		} catch (IOException e) {
-			logger.warn("Error processing " + configuration.getInitNodeFile());
-			e.printStackTrace();
+			logger.warn("Error processing " + configuration.getInitNodeFile(), e);
 		}
 		
 		NodeConfig initNode = JSONable.fromJSON(initialNodeJSON, NodeConfig.class);
@@ -88,6 +76,18 @@ public class NamingService {
 		} else {
 			logger.debug("Initial node already exists.");
 		}
+	}
+	
+	public void start() {
+		try {
+			initialize();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			logger.fatal("Cannot initialize NamingService. Quitting program.", e);
+			System.exit(1);
+		}
+		
+		receiver.startReceiving();
 	}
 	
 	private void createSystemNodeIfDoesNotExist(String path) throws IllegalArgumentException, InterruptedException {
