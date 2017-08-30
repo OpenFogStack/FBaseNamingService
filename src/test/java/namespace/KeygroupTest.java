@@ -53,7 +53,14 @@ public class KeygroupTest {
 
 	@Before
 	public void setUp() throws Exception {
+		// Wait required so that all files are fully created before deleting
+		java.util.concurrent.TimeUnit.SECONDS.sleep(5);
+		
 		Configuration configuration = new Configuration();
+		File root = new File(configuration.getRoot());
+		TestUtil.deleteDir(new File(root, "client"));
+		TestUtil.deleteDir(new File(root, "node"));
+		TestUtil.deleteDir(new File(root, "keygroup"));
 		controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		ns = new NamingService(controller, configuration);
 
@@ -68,16 +75,7 @@ public class KeygroupTest {
 
 	@After
 	public void tearDown() throws Exception {
-		// Wait required so that all files are fully created before deleting
-		java.util.concurrent.TimeUnit.SECONDS.sleep(5);
-		
 		ns.tearDown();
-		
-		Configuration configuration = new Configuration();
-		File root = new File(configuration.getRoot());
-		TestUtil.deleteDir(new File(root, "client"));
-		TestUtil.deleteDir(new File(root, "node"));
-		TestUtil.deleteDir(new File(root, "keygroup"));
 	}
 	
 	@Test
