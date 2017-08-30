@@ -117,7 +117,7 @@ public abstract class SystemEntity {
 	 * @param entity The entity to add
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected Response<Boolean> createEntity(IControllable controller, ConfigID entityID, Config entity) {
+	protected Response<String> createEntity(IControllable controller, ConfigID entityID, Config entity) {
 		// Set version for new entity to 1
 		entity.setVersion(1);
 		
@@ -126,7 +126,7 @@ public abstract class SystemEntity {
 		
 		if (data == null) {
 			logger.error("Error parsing config to JSON");
-			return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
+			return new Response<String>(null, ResponseCode.ERROR_INVALID_CONTENT);
 		}
 		
 		// Add node to system
@@ -134,15 +134,15 @@ public abstract class SystemEntity {
 			// Check if node already exists
 			if(exists(controller, entityID)) {
 				logger.warn(entityID + "already exists");
-				return new Response<Boolean>(false, ResponseCode.ERROR_ALREADY_EXISTS);
+				return new Response<String>(null, ResponseCode.ERROR_ALREADY_EXISTS);
 			}
 			
-			controller.addNode(activePath(entityID.toString()), data);
-			return new Response<Boolean>(true, ResponseCode.SUCCESS);
+			controller.addNode(activePath(entityID), data);
+			return new Response<String>(data, ResponseCode.SUCCESS);
 		} catch (InterruptedException e) {
 			logger.error("Error adding " + entityID);
 			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
 	
@@ -156,11 +156,11 @@ public abstract class SystemEntity {
 	protected Response<String> readEntity(IControllable controller, ConfigID entityID) {
 		try {
 			String data = null;
-			if(isActive(controller, entityID.toString())) {
-				data = controller.readNode(activePath(entityID.toString())).toString();
+			if(isActive(controller, entityID)) {
+				data = controller.readNode(activePath(entityID)).toString();
 				logger.debug("Reading " + entityID + " from active directory.");
 			} else if (isTombstoned(controller, entityID.toString())) {
-				data = controller.readNode(tombstonedPath(entityID.toString())).toString();
+				data = controller.readNode(tombstonedPath(entityID)).toString();
 				logger.debug("Reading " + entityID + " from tombstoned directory.");
 			} else {
 				logger.debug(capitalize(type) + " " + entityID + " doesn't exist");
@@ -183,7 +183,7 @@ public abstract class SystemEntity {
 	 * @param entity The new entity information to be stored
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	protected Response<Boolean> updateEntity(IControllable controller, ConfigID entityID, Config entity) {
+	protected Response<String> updateEntity(IControllable controller, ConfigID entityID, Config entity) {
 		// Set proper version number
 		try {
 			String json = readEntity(controller, entityID).getValue();
@@ -195,34 +195,34 @@ public abstract class SystemEntity {
 		} catch (NumberFormatException | IOException e) {
 			logger.error("Error parsing version from system");
 			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 		
 		try {
-			if(isActive(controller, entityID.toString())) {
+			if(isActive(controller, entityID)) {
 				// Parse entity to JSON
 				String data = JSONable.toJSON(entity);
 				
 				if(data == null) {
 					logger.error("Error parsing config to JSON");
-					return new Response<Boolean>(false, ResponseCode.ERROR_INVALID_CONTENT);
+					return new Response<String>(null, ResponseCode.ERROR_INVALID_CONTENT);
 				}
 				
 				// Add client to system
-				controller.updateNode(activePath(entityID.toString()), data);
+				controller.updateNode(activePath(entityID), data);
 				logger.debug("Updating " + entityID + " from active directory");
-				return new Response<Boolean>(true, ResponseCode.SUCCESS);
-			} else if (isTombstoned(controller, entityID.toString())) {
+				return new Response<String>(data, ResponseCode.SUCCESS);
+			} else if (isTombstoned(controller, entityID)) {
 				logger.warn("Can't update " + entityID + " because it is tombstoned");
-				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
+				return new Response<String>(null, ResponseCode.ERROR_TOMBSTONED);
 			} else {
 				logger.error(capitalize(type) + " " + entityID + " doesn't exist");
-				return new Response<Boolean>(false, ResponseCode.ERROR_DOESNT_EXIST);
+				return new Response<String>(null, ResponseCode.ERROR_DOESNT_EXIST);
 			}
 		} catch (InterruptedException e) {
 			logger.error("Error updating " + entityID);
 			e.printStackTrace();
-			return new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
+			return new Response<String>(null, ResponseCode.ERROR_INTERNAL);
 		}
 	}
 	
@@ -236,20 +236,20 @@ public abstract class SystemEntity {
 	 */
 	protected Response<Boolean> deleteEntity(IControllable controller, ConfigID entityID) {
 		try {
-			if (controller.exists(activePath(entityID.toString()))) {
+			if (controller.exists(activePath(entityID))) {
 				logger.debug("Tombstoning " + entityID);
 				
 				// Get data from client
-				String data = controller.readNode(activePath(entityID.toString()));
+				String data = controller.readNode(activePath(entityID));
 				
 				// Copy client to tombstoned path
-				controller.addNode(tombstonedPath(entityID.toString()), data);
+				controller.addNode(tombstonedPath(entityID), data);
 				
 				// Delete client from active path
-				controller.deleteNode(activePath(entityID.toString()));
+				controller.deleteNode(activePath(entityID));
 				
 				return new Response<Boolean>(true, ResponseCode.SUCCESS);
-			} else if (controller.exists(tombstonedPath(entityID.toString()))) {
+			} else if (controller.exists(tombstonedPath(entityID))) {
 				logger.warn(capitalize(type) + " " + entityID + " already tombstoned");
 				return new Response<Boolean>(false, ResponseCode.ERROR_TOMBSTONED);
 			} else {
@@ -391,5 +391,19 @@ public abstract class SystemEntity {
 	 */
 	private String capitalize(String input) {
 		return input.substring(0, 1).toUpperCase() + input.substring(1);
+	}
+	
+	/**
+	 * Converts a String response to a Boolean response
+	 * 
+	 * @param r The String response
+	 * @return The Boolean response
+	 */
+	protected Response<Boolean> responseStringToBool(Response<String> r) {
+		if(r.getResponseCode() == ResponseCode.SUCCESS) {
+			return new Response<Boolean>(true, ResponseCode.SUCCESS);
+		} else {
+			return new Response<Boolean>(false, r.getResponseCode());
+		}
 	}
 }

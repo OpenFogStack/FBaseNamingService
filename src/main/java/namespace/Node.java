@@ -42,7 +42,7 @@ public class Node extends SystemEntity {
 	 */
 	public Response<Boolean> createNode(IControllable controller, NodeConfig entity) {
 		logger.debug("Adding node " + entity.getID());
-		return createEntity(controller, entity.getNodeID(), entity);
+		return responseStringToBool(createEntity(controller, entity.getNodeID(), entity));
 	}
 	
 	/**
@@ -66,7 +66,7 @@ public class Node extends SystemEntity {
 	 */
 	Response<Boolean> updateNode(IControllable controller, NodeConfig entity) {
 		logger.debug("Updating node " + entity.getID());
-		return updateEntity(controller, entity.getNodeID(), entity);
+		return responseStringToBool(updateEntity(controller, entity.getNodeID(), entity));
 	}
 	
 	/**

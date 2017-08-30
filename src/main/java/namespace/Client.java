@@ -6,6 +6,7 @@ import database.IControllable;
 import model.config.ClientConfig;
 import model.data.ClientID;
 import model.messages.Response;
+import model.messages.ResponseCode;
 
 /**
  * The Client class performs all operations on the Clients section of
@@ -42,7 +43,8 @@ public class Client extends SystemEntity {
 	 */
 	Response<Boolean> createClient(IControllable controller, ClientConfig entity) {
 		logger.debug("Adding client " + entity.getID());
-		return createEntity(controller, entity.getClientID(), entity);
+		return responseStringToBool(createEntity(controller, entity.getClientID(), entity));
+		
 	}
 	
 	/**
@@ -66,7 +68,7 @@ public class Client extends SystemEntity {
 	 */
 	Response<Boolean> updateClient(IControllable controller, ClientConfig entity) {
 		logger.debug("Updating client " + entity.getID());
-		return updateEntity(controller, entity.getClientID(), entity);
+		return responseStringToBool(updateEntity(controller, entity.getClientID(), entity));
 	}
 	
 	/**
