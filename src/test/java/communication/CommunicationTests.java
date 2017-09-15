@@ -64,6 +64,7 @@ public class CommunicationTests {
 		
 		controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		ns = new NamingService(controller, configuration);
+		ns.start();
 		
 		sender = new NamespaceSender(ns, configuration.getAddress(), configuration.getPort(), null, null);
 		
@@ -104,11 +105,11 @@ public class CommunicationTests {
 		m.setContent("");
 		Envelope e = new Envelope(thisNode.getID(), m);
 		
-		sender.setPrivateKey(privateKey);
-		sender.setPublicKey(publicKey);
+		sender.setNodePrivateKey(privateKey);
+		sender.setServicePublicKey(ns.configuration.getPublicKey());
 		
 		String response = sender.send(e, null, null);
-		Thread.sleep(10000);
+		Thread.sleep(1000);
 		assertTrue(Boolean.parseBoolean(response));
 	}
 	
@@ -117,8 +118,8 @@ public class CommunicationTests {
 		Message m = new Message(Command.NODE_CONFIG_READ, JSONable.toJSON(thisNode.getID()));
 		Envelope e = new Envelope(thisNode.getID(), m);
 		
-		sender.setPublicKey(publicKey);
-		sender.setPrivateKey(privateKey);
+		sender.setServicePublicKey(ns.configuration.getPublicKey());
+		sender.setNodePrivateKey(privateKey);
 		
 		String response = sender.send(e, null, null);
 		@SuppressWarnings("unchecked")
@@ -148,8 +149,8 @@ public class CommunicationTests {
 		Message m = new Message(Command.NODE_CONFIG_CREATE, JSONable.toJSON(n));
 		Envelope e = new Envelope(thisNode.getID(), m);
 		
-		sender.setPublicKey(publicKey);
-		sender.setPrivateKey(privateKey);
+		sender.setServicePublicKey(ns.configuration.getPublicKey());
+		sender.setNodePrivateKey(privateKey);
 		
 		String response = sender.send(e, null, null);
 		

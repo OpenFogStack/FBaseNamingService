@@ -73,6 +73,7 @@ public class NamespaceReceiver extends AbstractReceiver {
 					m.setContent(response.getValue().toString());
 				}
 				m.setTextualInfo(response.getResponseCode().toString());
+				m.signMessage(ns.configuration.getPrivateKey(), EncryptionAlgorithm.RSA);
 				m.encryptFields(sender.getPublicKey(), EncryptionAlgorithm.RSA);
 				logger.debug("Sending response");
 				responseSocket.send(JSONable.toJSON(m));

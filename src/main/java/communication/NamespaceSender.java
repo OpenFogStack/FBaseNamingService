@@ -3,7 +3,6 @@ package communication;
 import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 
-import communication.AbstractSender;
 import control.NamingService;
 import crypto.CryptoProvider.EncryptionAlgorithm;
 import exceptions.FBaseEncryptionException;
@@ -20,7 +19,7 @@ import model.messages.Message;
 public class NamespaceSender extends AbstractSender {
 	
 	private NamingService ns;
-	private String nodePublicKey;
+	private String servicePublicKey;
 	private String nodePrivateKey;
 	
 	private static Logger logger = Logger.getLogger(NamespaceSender.class.getName());
@@ -54,6 +53,7 @@ public class NamespaceSender extends AbstractSender {
 			
 			Message m = JSONable.fromJSON(sender.recvStr(), Message.class);
 			m.decryptFields(nodePrivateKey, EncryptionAlgorithm.RSA);
+			m.verifyMessage(servicePublicKey, EncryptionAlgorithm.RSA);
 			
 			return m.getContent();
 		} catch (FBaseEncryptionException e) {
@@ -62,11 +62,11 @@ public class NamespaceSender extends AbstractSender {
 		}
 	}
 
-	public void setPublicKey(String publicKey) {
-		this.nodePublicKey = publicKey;
+	public void setServicePublicKey(String publicKey) {
+		this.servicePublicKey = publicKey;
 	}
 	
-	public void setPrivateKey(String privateKey) {
+	public void setNodePrivateKey(String privateKey) {
 		this.nodePrivateKey = privateKey;
 	}
 }
