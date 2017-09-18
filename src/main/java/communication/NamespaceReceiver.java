@@ -71,6 +71,8 @@ public class NamespaceReceiver extends AbstractReceiver {
 				Message m = new Message();
 				if (response.getValue() != null) {
 					m.setContent(response.getValue().toString());
+				} else {
+					m.setContent(response.getResponseCode().toString());
 				}
 				m.setTextualInfo(response.getResponseCode().toString());
 				m.signMessage(ns.configuration.getPrivateKey(), EncryptionAlgorithm.RSA);
