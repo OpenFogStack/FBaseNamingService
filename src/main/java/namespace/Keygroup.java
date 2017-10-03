@@ -5,6 +5,7 @@ import java.util.function.BiConsumer;
 
 import org.apache.log4j.Logger;
 
+import crypto.AlgorithmAES;
 import crypto.CryptoProvider.EncryptionAlgorithm;
 import database.IControllable;
 import model.JSONable;
@@ -60,6 +61,12 @@ public class Keygroup extends SystemEntity {
 				// add senderID to entity
 				ReplicaNodeConfig repConfig = new ReplicaNodeConfig(senderID);
 				entity.addReplicaNode(repConfig);
+				
+				// generate secret and algorithm if not set yet
+				if (entity.getEncryptionSecret() == null) {
+					entity.setEncryptionAlgorithm(EncryptionAlgorithm.AES);
+					entity.setEncryptionSecret(AlgorithmAES.generateNewSecret());
+				}
 				
 				// Build App Node if necessary
 				if(!isActive(controller, entity.getKeygroupID().getAppPath())) {
