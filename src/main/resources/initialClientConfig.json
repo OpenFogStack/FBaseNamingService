@@ -1,0 +1,8 @@
+{
+  "version" : 0,
+  "clientID" : {
+    "clientID" : "client1"
+  },
+  "publicKey" : "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAp4utGFd8lUj1BidfE/wJDV/nul8NOQ6ccHeDa/64uSiWfQ+eydJzTD8UTDSHfE0Mdvn9Ecx+PxYAnCXFOvEa7raYxgzf/LBQgRY/VvGOLAHUWZUUlfvBK4MpdBO/JW7lhrBBmVklV64N2mPOoDWj0M0wCCMadd49e1H+ryVC2aHe73+ZF9vKpzN/EesEOhd/U9PSv/j9/OH711yX9iGnmboBTpFIZGzkDgo/LdNOkjT87eBTMok9bFT2HnPhe93GhkhuSKcI8onxTckpdV2QteXH8DLTqc7ch1nCrFZ52qlInDpk2eqG7uIggH1pEqT90RUwRPlBgRDdylo1AlfF7wIDAQAB",
+  "encryptionAlgorithm" : "RSA"
+}

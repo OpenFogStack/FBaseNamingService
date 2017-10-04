@@ -1,5 +1,7 @@
 package communication;
 
+import java.io.FileNotFoundException;
+
 import org.apache.log4j.Logger;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQ.Socket;
@@ -20,11 +22,11 @@ import namespace.MessageParser;
 import namespace.Node;
 
 public class NamespaceReceiver extends AbstractReceiver {
-	
+
 	private NamingService ns;
 
 	private static Logger logger = Logger.getLogger(NamespaceReceiver.class.getName());
-	
+
 	public NamespaceReceiver(NamingService ns, String address, int port) {
 		super(address, port, ZMQ.REP);
 		this.ns = ns;
@@ -35,25 +37,28 @@ public class NamespaceReceiver extends AbstractReceiver {
 		try {
 			logger.debug("Interpreting message.");
 			// Decrypt with own private key
-			envelope.getMessage().decryptFields(ns.configuration.getPrivateKey(), EncryptionAlgorithm.RSA);
-			
+			envelope.getMessage().decryptFields(ns.configuration.getPrivateKey(),
+					EncryptionAlgorithm.RSA);
+
 			// Verify authenticity
 			NodeID senderID = (NodeID) envelope.getConfigID();
 			Response<String> r = Node.getInstance().readNode(ns.controller, senderID);
 			NodeConfig sender = JSONable.fromJSON(r.getValue(), NodeConfig.class);
-			boolean authenticated = envelope.getMessage().verifyMessage(sender.getPublicKey(), EncryptionAlgorithm.RSA);
-			
+			boolean authenticated = envelope.getMessage().verifyMessage(sender.getPublicKey(),
+					EncryptionAlgorithm.RSA);
+
 			if (authenticated) {
 				logger.debug("Node authenticated for message");
-				
+
 				Response<?> response = null;
 				if (Command.RESET_NAMING_SERVICE.equals(envelope.getMessage().getCommand())) {
 					// process delete request
 					if (ns.configuration.isDebugMode()) {
 						logger.debug("Resetting namingserivce data");
 						try {
-							response = new Response<Boolean>(ns.initializeDataStorage(true), ResponseCode.SUCCESS);
-						} catch (InterruptedException e) {
+							response = new Response<Boolean>(ns.initializeDataStorage(true),
+									ResponseCode.SUCCESS);
+						} catch (InterruptedException | FileNotFoundException e) {
 							logger.error("Could not wipe storage: " + e.getMessage());
 							response = new Response<Boolean>(false, ResponseCode.ERROR_INTERNAL);
 							e.printStackTrace();
@@ -67,7 +72,7 @@ public class NamespaceReceiver extends AbstractReceiver {
 					// normally process command
 					response = MessageParser.runCommand(ns.controller, envelope);
 				}
-				
+
 				Message m = new Message();
 				if (response.getValue() != null) {
 					m.setContent(response.getValue().toString());
@@ -80,12 +85,12 @@ public class NamespaceReceiver extends AbstractReceiver {
 				logger.debug("Sending response");
 				responseSocket.send(JSONable.toJSON(m));
 				logger.debug("Response send");
-			
+
 			} else {
 				logger.debug("Node is not authenticated");
 				// TODO add unauthenticated stuff
 			}
-			
+
 		} catch (FBaseEncryptionException e) {
 			logger.error("Decryption failed", e);
 		}

@@ -37,7 +37,7 @@ public class Client extends SystemEntity {
 	 * @param entity The ClientConfig to be registered to the system
 	 * @return Response object with Boolean containing the success or failure of operation
 	 */
-	Response<Boolean> createClient(IControllable controller, ClientConfig entity) {
+	public Response<Boolean> createClient(IControllable controller, ClientConfig entity) {
 		logger.debug("Adding client " + entity.getID());
 		return responseStringToBool(createEntity(controller, entity.getClientID(), entity));
 		

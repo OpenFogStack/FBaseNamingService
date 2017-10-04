@@ -31,6 +31,7 @@ public class Configuration {
 	
 	// Initialization
 	private String initNodeFile;
+	private String initClientFile;
 	
 	public Configuration() {
 		this(defaultFileName);
@@ -66,6 +67,7 @@ public class Configuration {
 			
 			// Initialization
 			initNodeFile = properties.getProperty("initNodeFile");
+			initClientFile = properties.getProperty("initClientFile");
 			
 			// Set
 			switch(localOS) {
@@ -129,5 +131,9 @@ public class Configuration {
 	
 	public String getInitNodeFile() {
 		return initNodeFile;
+	}
+	
+	public String getInitClientFile() {
+		return initClientFile;
 	}
 }
