@@ -14,7 +14,12 @@ public class Starter {
 	public static void main(String[] args) {
 		logger.info("And SysAdmin said \"Let there be FBase Naming Service,\" and there was FBase Naming Service.");
 		
-		Configuration configuration = new Configuration();
+		Configuration configuration;
+		if (args.length == 1) {
+			configuration = new Configuration(args[0]);
+		} else {
+			configuration = new Configuration();
+		}
 		IControllable controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		NamingService ns = new NamingService(controller, configuration);
 		ns.start();

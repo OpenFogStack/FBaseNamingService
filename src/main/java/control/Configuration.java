@@ -46,7 +46,7 @@ public class Configuration {
 		
 		try {
 			if (is == null) {
-				is = new FileInputStream(defaultFileName);
+				is = new FileInputStream(configName);
 			}
 			
 			properties.load(is);
