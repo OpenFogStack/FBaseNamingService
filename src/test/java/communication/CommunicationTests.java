@@ -63,7 +63,7 @@ public class CommunicationTests {
 
 		controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		ns = new NamingService(controller, configuration);
-		ns.start();
+		ns.start(false);
 
 		sender = new NamespaceSender(ns, configuration.getAddress(), configuration.getPort(), null, null);
 

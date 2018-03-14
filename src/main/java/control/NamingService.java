@@ -111,9 +111,9 @@ public class NamingService {
 		return success;
 	}
 
-	public void start() {
+	public void start(boolean wipeExistent) {
 		try {
-			initializeDataStorage(false);
+			initializeDataStorage(wipeExistent);
 		} catch (InterruptedException | FileNotFoundException e) {
 			Thread.currentThread().interrupt();
 			logger.fatal("Cannot initialize NamingService. Quitting program.", e);
