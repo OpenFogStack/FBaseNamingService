@@ -12,7 +12,7 @@ public class Configuration {
 	private static Logger logger = Logger.getLogger(Configuration.class.getName());
 	
 	private Properties properties;
-	private static final String defaultFileName = "local.properties";
+	private static final String defaultFileName = "quickstart_local.properties";
 	
 	// General
 	private String address;
@@ -87,10 +87,6 @@ public class Configuration {
 			logger.fatal("Error processing configuration file. Quitting program", e);
 			System.exit(1);
 		}
-	}
-
-	public static String getDefaultfilename() {
-		return defaultFileName;
 	}
 
 	public String getAddress() {
