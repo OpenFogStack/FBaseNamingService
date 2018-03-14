@@ -39,19 +39,18 @@ public class CommunicationTests {
 	private static NamingService ns;
 	private NamespaceSender sender;
 	private NodeConfig thisNode;
-	
-	private static String publicKey;
+
 	private static String privateKey;
-	
+
 	private static final String nodeActivePath = "/node/active/";
 	private static final String nodeTombstonedPath = "/node/tombstoned/";
-	
+
 	@BeforeClass
-	public static void setUpBeforeClass() throws Exception {
+	public static void setUpBeforeClass() {
 	}
 
 	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
+	public static void tearDownAfterClass() {
 	}
 
 	@Before
@@ -61,21 +60,21 @@ public class CommunicationTests {
 		TestUtil.deleteDir(new File(root, "client"));
 		TestUtil.deleteDir(new File(root, "node"));
 		TestUtil.deleteDir(new File(root, "keygroup"));
-		
+
 		controller = new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		ns = new NamingService(controller, configuration);
 		ns.start();
-		
+
 		sender = new NamespaceSender(ns, configuration.getAddress(), configuration.getPort(), null, null);
-		
+
 		Pair<PublicKey, PrivateKey> keys = RSAHelper.generateKeyPair(512);
-		publicKey = RSAHelper.getEncodedStringFromKey(keys.getValue0());
+		String publicKey = RSAHelper.getEncodedStringFromKey(keys.getValue0());
 		privateKey = RSAHelper.getEncodedStringFromKey(keys.getValue1());
-		
+
 		// Set up original version of node
 		NodeID id = new NodeID("test_node");
 		EncryptionAlgorithm alg1 = EncryptionAlgorithm.AES;
-		List<String> machines1 = new ArrayList<String>();
+		List<String> machines1 = new ArrayList<>();
 		machines1.add("m1");
 		machines1.add("m2");
 		machines1.add("m3");
@@ -84,16 +83,16 @@ public class CommunicationTests {
 		Integer rPort1 = 3001;
 		String loc1 = "my_location";
 		String desc1 = "my_description";
-		
+
 		thisNode = new NodeConfig(id, publicKey, alg1, machines1, pPort1, mPort1, rPort1, loc1, desc1);
 		createNode(thisNode);
 	}
 
 	@After
-	public void tearDown() throws Exception {
+	public void tearDown() {
 		// Wait required so that all files are fully created before deleting
-		java.util.concurrent.TimeUnit.SECONDS.sleep(5);
-		
+		// java.util.concurrent.TimeUnit.SECONDS.sleep(3);
+
 		ns.tearDown();
 		sender.shutdown();
 	}
@@ -104,37 +103,37 @@ public class CommunicationTests {
 		m.setCommand(Command.RESET_NAMING_SERVICE);
 		m.setContent("");
 		Envelope e = new Envelope(thisNode.getID(), m);
-		
+
 		sender.setNodePrivateKey(privateKey);
 		sender.setServicePublicKey(ns.configuration.getPublicKey());
-		
+
 		String response = sender.send(e, null, null);
 		Thread.sleep(1000);
 		assertTrue(Boolean.parseBoolean(response));
 	}
-	
+
 	@Test
 	public void testReadWithCommunication() {
 		Message m = new Message(Command.NODE_CONFIG_READ, JSONable.toJSON(thisNode.getID()));
 		Envelope e = new Envelope(thisNode.getID(), m);
-		
+
 		sender.setServicePublicKey(ns.configuration.getPublicKey());
 		sender.setNodePrivateKey(privateKey);
-		
+
 		String response = sender.send(e, null, null);
 		@SuppressWarnings("unchecked")
 		Response<String> read = (Response<String>) TestUtil.run(Command.NODE_CONFIG_READ, thisNode.getID(), thisNode.getID(), controller);
-		
+
 		assertEquals("Proper message received", read.getValue(), response);
 	}
-	
+
 	@Test
 	public void testWriteWithCommunication() {
 		// Set up original version of node
 		NodeID id = new NodeID("test_node_1");
 		String key1 = "my_public_key";
 		EncryptionAlgorithm alg1 = EncryptionAlgorithm.AES;
-		List<String> machines1 = new ArrayList<String>();
+		List<String> machines1 = new ArrayList<>();
 		machines1.add("m1");
 		machines1.add("m2");
 		machines1.add("m3");
@@ -143,28 +142,28 @@ public class CommunicationTests {
 		Integer rPort1 = 3001;
 		String loc1 = "my_location";
 		String desc1 = "my_description";
-		
+
 		NodeConfig n = new NodeConfig(id, key1, alg1, machines1, pPort1, mPort1, rPort1, loc1, desc1);
-		
+
 		Message m = new Message(Command.NODE_CONFIG_CREATE, JSONable.toJSON(n));
 		Envelope e = new Envelope(thisNode.getID(), m);
-		
+
 		sender.setServicePublicKey(ns.configuration.getPublicKey());
 		sender.setNodePrivateKey(privateKey);
-		
+
 		String response = sender.send(e, null, null);
-		
+
 		System.out.println(response);
 		assertEquals("Proper message received", "true", response);
 	}
 
-	void createNode(NodeConfig c) throws IllegalArgumentException, InterruptedException {
+	private void createNode(NodeConfig c) throws IllegalArgumentException, InterruptedException {
 		assertFalse("Node not active at start", controller.exists(nodeActivePath + c.getNodeID()));
 		assertFalse("Node not in tombstoned at start", controller.exists(nodeTombstonedPath + c.getNodeID()));
-		
+
 		@SuppressWarnings("unchecked")
 		Response<Boolean> response = (Response<Boolean>) TestUtil.run(Command.NODE_CONFIG_CREATE, c, c.getID(), controller);
-		
+
 		assertTrue("Proper success response", response.getValue());
 		assertEquals("Proper response code", ResponseCode.SUCCESS, response.getResponseCode());
 		assertTrue("Node in active", controller.exists(nodeActivePath + c.getNodeID()));
