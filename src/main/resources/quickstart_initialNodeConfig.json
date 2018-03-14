@@ -1,5 +1,5 @@
 {
-    "version": 1,
+    "version": 0,
     "nodeID": {
         "nodeID": "N1"
     },
@@ -12,5 +12,5 @@
     "messagePort": 6001,
     "restPort": 8081,
     "location": "Everywhere",
-    "description": "Matching node configuration to the quickstart_local.properties of the FBase project."
+    "description": "Machine specified in JUnit tests (Node 1) of the FBase project"
 }
