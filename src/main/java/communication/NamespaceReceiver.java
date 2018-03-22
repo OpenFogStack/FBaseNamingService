@@ -48,7 +48,7 @@ public class NamespaceReceiver extends AbstractReceiver {
 					EncryptionAlgorithm.RSA);
 
 			if (authenticated) {
-				logger.debug("Node authenticated for message");
+				logger.debug("Node " + senderID +  " authenticated for message " + envelope.getMessage().getCommand());
 
 				Response<?> response = null;
 				if (Command.RESET_NAMING_SERVICE.equals(envelope.getMessage().getCommand())) {
