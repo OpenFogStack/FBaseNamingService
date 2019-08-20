@@ -12,8 +12,6 @@ public class Starter {
 	private static Logger logger = Logger.getLogger(Starter.class.getName());
 
 	public static void main(String[] args) {
-		logger.info("And SysAdmin said \"Let there be FBase Naming Service,\" and there was FBase Naming Service.");
-
 		Configuration configuration;
 		boolean wipeExistent = false;
 		if (args.length == 1) {
@@ -27,6 +25,8 @@ public class Starter {
 				new LocalFileController(new File(configuration.getRoot()), configuration.getFolderSeparator());
 		NamingService ns = new NamingService(controller, configuration);
 		ns.start(wipeExistent);
+
+		logger.info("FBase Naming Service started");
 	}
 
 }
